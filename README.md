@@ -237,6 +237,31 @@ clone and read the layer** — this is for when you wire the gate into a real re
 
 Skip to [the checklist](#checklist) if you just want the list.
 
+### What costs money, and what does not
+
+**Everything required to make this layer work is free.** Only the enforcement layer on top of it is
+tier-dependent, and it is tier-dependent in one specific way: **private repositories.**
+
+| Feature | Public repo | Private repo on the free plan |
+| :-- | :-- | :-- |
+| Actions minutes | Free, unmetered | Monthly allowance, then billed |
+| Workflows, secrets, variables | Free | Free |
+| Container registry (`ghcr.io`) | Free | Storage allowance, then billed |
+| Dependabot alerts + security updates | Free | **Free** |
+| Secret scanning + push protection | Free | Paid add-on |
+| Code scanning | Free | Paid add-on |
+| `CODEOWNERS` auto-review-request | Free | Paid — Pro, Team, or Enterprise |
+| **Branch protection / rulesets** | **Free** | **Paid — Pro, Team, or Enterprise** |
+
+So the honest summary:
+
+- **Public repository:** every step below is available to you at no cost.
+- **Private repository, free plan:** everything through the container registry works. Branch
+  protection does not — see [Nice to have — branch protection](#nice-to-have--branch-protection) below.
+
+> Plans and limits change. Check GitHub's current pricing page before concluding a feature is out
+> of reach — this table reflects the tiers at the time of writing, not a promise.
+
 ### Step 0 — Create the branches (this is what turns the workflows on)
 
 ```bash
@@ -338,10 +363,22 @@ setting is a ceiling the job-level declaration cannot exceed.
 After the first successful push, the package appears under your profile's **Packages** tab, private
 by default. Make it public there if your deploy target pulls it anonymously.
 
-### Step 6 — Branch protection
+### Step 6 — Dependabot
 
-Not required for the workflows to run, but it is what converts the gate from advice into
-enforcement. **Settings → Rules → Rulesets → New branch ruleset**, applied to `dev` and `prod`:
+`.github/dependabot.yml` ships configured. It needs no secret, but it does need
+**Settings → Code security → Dependabot alerts** and **security updates** enabled to be useful.
+
+Its pull requests target `dev`, so they run the full gate like any other change.
+
+### Nice to have — branch protection
+
+**This step is optional, and on a private repository it is a paid feature** (GitHub Pro, Team, or
+Enterprise). On a public repository it is free.
+
+Everything above works without it. What it adds is the difference between the gate **reporting** a
+failure and the gate **preventing** a merge.
+
+If you have it, **Settings → Rules → Rulesets → New branch ruleset**, applied to `dev` and `prod`:
 
 | Setting | Value | Why |
 | :-- | :-- | :-- |
@@ -353,12 +390,32 @@ enforcement. **Settings → Rules → Rulesets → New branch ruleset**, applied
 > **`react-doctor` is advisory and must not be a required check.** It reports framework health and
 > never fails a build; marking it required makes it a blocking gate it was not designed to be.
 
-### Step 7 — Dependabot
+#### If you do not have it
 
-`.github/dependabot.yml` ships configured. It needs no secret, but it does need
-**Settings → Code security → Dependabot alerts** and **security updates** enabled to be useful.
+The gate still runs on every pull request and still shows red or green. What is missing is only the
+block. Three things close most of that gap for free:
 
-Its pull requests target `dev`, so they run the full gate like any other change.
+**1. Run the gate before you push.** It is the same script CI runs, so there are no surprises:
+
+```bash
+bash .github/scripts/quality-gate.sh origin/dev
+```
+
+**2. Make it automatic with a pre-push hook.** This genuinely enforces — the push does not happen:
+
+```bash
+# .husky/pre-push
+bash .github/scripts/quality-gate.sh origin/dev
+```
+
+Local hooks can be skipped with `--no-verify`, so this is discipline rather than a wall. But it
+catches the ordinary case, which is someone forgetting, not someone deliberately bypassing.
+
+**3. `CODEOWNERS` still requests reviewers.** The shipped file says as much in its own comment:
+without branch protection it is a prompt, not a gate. A prompt is still worth having.
+
+If the repository can be public, making it public is the cheapest way to get real enforcement —
+branch protection, secret scanning, and push protection all become free at once.
 
 ### Checklist
 
@@ -371,9 +428,12 @@ Its pull requests target `dev`, so they run the full gate like any other change.
 □ Secret:  APP_REPO_TOKEN               (or leave unset — the step self-skips)
 □ Variable: CI_RUNNER                   (or leave unset — defaults to ubuntu-latest)
 □ Workflow permissions → Read and write (required for ghcr.io)
-□ Branch ruleset on dev and prod, Quality Gate required
 □ Dependabot alerts enabled
-□ CODEOWNERS updated from @your-github-handle
+
+Nice to have — free on public repos, paid on private:
+□ Branch ruleset on dev and prod, Quality Gate required
+□ CODEOWNERS updated from @your-github-handle (the file is free to add;
+  auto-requesting reviewers from it needs a paid plan on a private repo)
 ```
 
 ### Verifying it without burning minutes
