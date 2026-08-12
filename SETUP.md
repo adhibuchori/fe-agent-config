@@ -3,7 +3,7 @@
 Ordered by dependency, not by importance. Each step is verifiable before the next one starts, and
 the step that can destroy files comes last on purpose.
 
-Budget about an hour. Steps 1–4 are the useful minimum; 5–7 are opt-in.
+Budget about an hour. Steps 1–5 are the useful minimum; 6–8 are opt-in.
 
 > **Read this first: the workflows arrive disarmed.**
 >
@@ -51,16 +51,128 @@ Three optional shared docs ship as `.claude/*.example.md`. Fill one in, rename i
 `.example`, and uncomment its import line at the bottom of `CLAUDE.md`. **Delete the ones you do
 not need** — an unfilled template is worse than an absent one, because an agent will try to use it.
 
-### If you route commands through a wrapper
+---
 
-A token-reducing proxy, a sandbox, a recorder. If you have one, declare it in `CLAUDE.md` as a hard
-rule and prefix every command in that file with it. Mentioning a wrapper in passing does not work;
-it gets dropped the moment a task gets busy. If you have no wrapper, the commands as written are
-already correct.
+## 3. Agent tooling — MCP servers, wrappers, plugins
+
+This is what the agent actually reaches for on every task. Hooks stop bad edits; **this decides how
+well it works in the first place**, so it is worth ten minutes even though nothing breaks if you
+skip it.
+
+### The servers in `.mcp.json`
+
+Eleven ship. **Most projects should delete most of them.** Every connected server spends context on
+its tool definitions before you have asked anything, so an unused server is a permanent tax.
+
+| Server | What it gives the agent | Needs | Keep it if |
+| :-- | :-- | :-- | :-- |
+| `serena` | Semantic code search and edit over a language server — find a symbol, its references, its implementations, rename it safely | `uvx` ([Astral uv](https://github.com/astral-sh/uv)). No token | **Almost always.** See below |
+| `context7` | Current library documentation, fetched live | `npx`. No token | You use libraries that moved recently |
+| `github` | Pull requests, issues, reviews, and branches from inside a session | `GITHUB_PERSONAL_ACCESS_TOKEN` | You want the agent to open and read pull requests |
+| `db-dev` · `db-prod` | Query and inspect a database — schema, health, index advice, query plans | `DB_DEV_URI` / `DB_PROD_URI`, plus a tunnel if the port is not public | The agent should debug against a real schema |
+| `dokploy-mcp` | Deployment platform control — applications, deploys, logs, backups | `DOKPLOY_URL`, `DOKPLOY_API_KEY` | You deploy with Dokploy. Otherwise **delete** |
+| `cloudflare` | DNS, Workers, and account resources | OAuth in an interactive session | You use Cloudflare. Otherwise **delete** |
+| `hostinger-hosting` · `-domains` · `-dns` · `-vps` | VPS, domain, and DNS management | `HOSTINGER_API_TOKEN` | You host with Hostinger. Otherwise **delete all four** |
+
+Deleting a server is just removing its object from `.mcp.json`. Nothing else references them.
+
+> **The four infrastructure servers are vendor-specific and are the first things to cut.** They are
+> in here because the project this was extracted from uses those vendors, not because the layer
+> needs them. Replace them with your own provider's server, or run with none — the gate, the hooks,
+> and the rules do not care.
+
+### Serena — install it, or delete the rules that assume it
+
+`CLAUDE.md` § Tool Priority contains a **strict enforcement block**: always use Serena for code
+files, never use the built-in file readers for them. That block is the single largest behavioural
+instruction in the file.
+
+**If Serena is not installed, that instruction is telling your agent not to read your code.** The
+block does have a documented fallback — report the failure, log it, then use built-in tools — so it
+degrades rather than deadlocks. But you get a warning on every task and a confused agent.
+
+So pick one, deliberately:
+
+```bash
+# Install uv, which provides uvx. The server itself needs no separate install —
+# the .mcp.json entry fetches it on first run.
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Or** delete the § Tool Priority section from `CLAUDE.md` and the `serena` entry from `.mcp.json`,
+together. Deleting one without the other is the failure case.
+
+Two details in the shipped configuration worth knowing:
+
+**`ENABLE_TOOL_SEARCH: "true"`** defers Serena's tool definitions until they are needed. It cuts the
+per-session cost substantially. The trade-off: Serena's own instructions are deferred too, so the
+session must call `initial_instructions` once before its first symbol search — which is exactly what
+`CLAUDE.md` § Session Start already mandates.
+
+**The `alwaysAllow` list** pre-approves Serena's read and edit tools so you are not answering a
+permission prompt every few seconds. Read it before adopting it: it includes symbol editing and
+deletion. Trim it if that is more trust than you want to extend by default.
+
+### If you work across several repositories at once
+
+`.claude/SERENA-WORKSPACE.example.md` covers running one Serena project spanning several repos, so
+symbol search reaches all of them. It is genuinely useful on a multi-repo product and pure overhead
+on a single repo.
+
+Fill it in only if you need it; otherwise delete the file. Two things it will save you: the
+umbrella is machine-local configuration that a fresh clone does not inherit, and path prefixes
+resolve against the umbrella root rather than your repo — which fails loudly, but only if you know
+to expect it.
+
+### Command wrappers
+
+If you route shell commands through a wrapper — a token-reducing proxy such as **RTK**, a sandbox,
+an audit recorder — declare it in `CLAUDE.md` § Command Wrapper **as a hard rule**, and prefix every
+command in that file with it.
+
+The reference project uses one, and it was stripped from this layer on purpose: it is machine-local
+tooling that a fresh clone will not have, and a rule pointing at a missing binary fails every
+command. The **shape** is left in place so you can slot yours in.
+
+Why it has to be a hard rule rather than a note: a wrapper mentioned in passing gets dropped the
+moment a task gets busy, and then half your commands are wrapped and half are not — which is worse
+than never wrapping at all, because the numbers stop meaning anything.
+
+### Plugins
+
+`.claude/settings.json` ships with **no plugins enabled**, and that is deliberate rather than an
+oversight.
+
+The reference project runs one — **Ponytail**, which trims context — configured through
+`enabledPlugins` plus a couple of environment variables. It was removed here for the same reason as
+the command wrapper: a plugin declared but not installed is a startup error for everyone who clones
+this.
+
+If you use plugins, they go in the same file:
+
+```jsonc
+{
+  "enabledPlugins": { "<plugin>@<source>": true },
+  "env": { "<PLUGIN_SETTING>": "<value>" }
+}
+```
+
+Keep them out of `.claude/settings.local.json` if the whole team should get them, and in it if the
+choice is yours alone. The `.gitignore` here already excludes the local file.
+
+### AI code review on pull requests
+
+`.github/workflows/deepseek-review.yml` posts an AI review comment on pull requests into `dev`,
+using [`hustcer/deepseek-review`](https://github.com/hustcer/deepseek-review) — which accepts any
+OpenAI-compatible endpoint, so the provider is your choice despite the name.
+
+Setup is one secret, and it is covered in **README § GitHub repository configuration**, together
+with the security constraint that matters: the workflow runs under `pull_request_target` with your
+repository secrets in scope, and **must never check out the pull request's code**.
 
 ---
 
-## 3. Wire the hooks
+## 4. Wire the hooks
 
 `.claude/settings.json` already references all ten. Make them executable and confirm the runtime
 picks them up:
@@ -83,7 +195,7 @@ hook that always passes trains everyone to ignore hook output.
 
 ---
 
-## 4. Make the gate runnable
+## 5. Make the gate runnable
 
 `.github/scripts/quality-gate.sh` is the definition of "passing". It calls package scripts, so
 those must exist:
@@ -113,7 +225,7 @@ for reasons everyone knows about is a gate nobody reads.
 
 ---
 
-## 5. Slash commands and their mirrors — optional
+## 6. Slash commands and their mirrors — optional
 
 Commands are maintained **once** in `_workflow-source/` and mirrored into `.claude/commands/` and
 `.agent/workflows/`.
@@ -133,7 +245,7 @@ knowingly rather than inheriting it.
 
 ---
 
-## 6. Third-party skills — optional, not vendored
+## 7. Third-party skills — optional, not vendored
 
 Neither is included here. Both are installed by their own tooling, which owns their versioning.
 
@@ -150,7 +262,7 @@ them, which breaks the next upgrade. `scripts/sync-workflows.sh` handles this wi
 
 ---
 
-## 7. The AI-config strip pipeline — last, and only if you want it
+## 8. The AI-config strip pipeline — last, and only if you want it
 
 **This is the only part that deletes files. Everything else should be working before you touch it.**
 

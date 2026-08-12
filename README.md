@@ -454,7 +454,7 @@ Nothing is mandatory. Every piece degrades to "delete this file" rather than bre
 | For | You need |
 | :-- | :-- |
 | Hooks, commands, subagents | An agent runtime that reads `.claude/` and `AGENTS.md` |
-| The quality gate | GitHub Actions, plus package scripts named in `SETUP.md` §4 |
+| The quality gate | GitHub Actions, plus package scripts named in `SETUP.md` §5 |
 | Deployment workflow | A `Dockerfile` and a deploy target — neither ships here |
 | MCP servers | The env vars named in `.mcp.json`; delete the servers you do not use |
 | Second-tool mirrors | A second tool that reads `.agent/` or `.agents/`. If none, delete both |
@@ -509,8 +509,8 @@ push and no secrets are needed. They activate when you create those branches in 
 the right order, since a gate has nothing to guard until then.
 
 **Do I have to adopt all of it?**
-No, and you should not start by trying. `SETUP.md` §1–§4 is the useful minimum: rules, hooks, and
-the gate. The strip pipeline is optional and comes last because it is the only part that deletes
+No, and you should not start by trying. `SETUP.md` §1–§5 is the useful minimum: tooling, rules, hooks,
+and the gate. The strip pipeline is optional and comes last because it is the only part that deletes
 files.
 
 **Is this specific to one agent runtime?**
@@ -519,7 +519,7 @@ The rules, gate, and scripts are portable. The hook wiring in `.claude/settings.
 that reads from those paths — delete them if you use only one tool.
 
 **Why is there no `package.json`?**
-Because that would make this a starter project rather than a configuration layer. `SETUP.md` §4
+Because that would make this a starter project rather than a configuration layer. `SETUP.md` §5
 lists exactly the four scripts the gate calls, so you can add them to whatever you already have.
 
 **What about a documentation-site repo?**
