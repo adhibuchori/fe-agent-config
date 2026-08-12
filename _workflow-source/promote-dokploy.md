@@ -15,7 +15,7 @@ usual green-checks-then-merge flow would block forever.
 **Prefer `/promote`.** This command trades away every automated gate. Reach for it when the
 alternative is production going stale, not to save a few minutes.
 
-**This repo's deploy target:** Dokploy application **FE-Learning-Management-System** (`ITEMmN5hRDdPMPlcHzzV3`) — https://<app-host>
+**This repo's deploy target:** Dokploy application **<app-name>** (`<app-id>`) — https://<app-host>
 
 **Quality gate for this repo:**
 
@@ -218,7 +218,7 @@ A green run without them proves nothing.
 ### 3.1 Deploy directly through Dokploy
 
 ```
-mcp__dokploy-mcp__application-deploy  applicationId=ITEMmN5hRDdPMPlcHzzV3
+mcp__dokploy-mcp__application-deploy  applicationId=<app-id>
 ```
 
 That is the same action the webhook would have triggered, minus GitHub Actions. It builds from
@@ -238,7 +238,7 @@ still looks like a success.
 ### 3.2 Confirm the deployment is real
 
 ```
-mcp__dokploy-mcp__deployment-all  applicationId=ITEMmN5hRDdPMPlcHzzV3
+mcp__dokploy-mcp__deployment-all  applicationId=<app-id>
 ```
 
 The first element is the newest. Its `createdAt` must be **after** the push in 2.2, and its

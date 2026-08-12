@@ -11,7 +11,7 @@ description: Full promotion pipeline — internal branch to dev to prod, with CI
 Takes work from `internal/{scope}` through `dev` to `prod`, and does not report success until
 production has actually changed.
 
-**This repo's deploy target:** Dokploy application **FE-Learning-Management-System** (`ITEMmN5hRDdPMPlcHzzV3`) — https://<app-host>
+**This repo's deploy target:** Dokploy application **<app-name>** (`<app-id>`) — https://<app-host>
 
 **Quality gate for this repo:**
 
@@ -145,7 +145,7 @@ gh run list --branch prod --limit 3
 ### 3.2 Confirm the deployment exists
 
 ```
-mcp__dokploy-mcp__deployment-all  applicationId=ITEMmN5hRDdPMPlcHzzV3
+mcp__dokploy-mcp__deployment-all  applicationId=<app-id>
 ```
 
 The first element is the newest. Confirm its `createdAt` is **after** the merge timestamp from
@@ -157,7 +157,7 @@ truncated, and has already caused a stale deployment to be reported as the curre
 If no deployment appeared, the trigger failed silently. Deploy manually and then find out why:
 
 ```
-mcp__dokploy-mcp__application-deploy  applicationId=ITEMmN5hRDdPMPlcHzzV3
+mcp__dokploy-mcp__application-deploy  applicationId=<app-id>
 ```
 
 **A green Actions run is not evidence that production changed.** Three backend promotions once
