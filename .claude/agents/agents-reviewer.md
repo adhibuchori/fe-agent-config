@@ -1,5 +1,5 @@
 ---
-name: sc-reviewer
+name: agents-reviewer
 description: Validates a change against this repo's AGENTS.md — component SoC, styling, React Compiler, file length, and JSDoc.
 ---
 

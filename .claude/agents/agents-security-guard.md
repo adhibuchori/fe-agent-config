@@ -1,5 +1,5 @@
 ---
-name: sc-security-guard
+name: agents-security-guard
 description: Validates CSP integrity, secret hygiene, and XSS prevention for this project.
 model: haiku
 ---

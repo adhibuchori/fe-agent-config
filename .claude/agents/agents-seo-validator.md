@@ -1,5 +1,5 @@
 ---
-name: sc-seo-validator
+name: agents-seo-validator
 description: Validates metadata completeness, JSON-LD schema, and Open Graph setup.
 model: haiku
 ---

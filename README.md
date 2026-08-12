@@ -23,6 +23,7 @@ Not advice about writing rules. The rules themselves, in the form that executes.
 - [Repository structure](#repository-structure)
 - [Quick start](#quick-start)
 - [What is deliberately excluded](#what-is-deliberately-excluded)
+- [GitHub repository configuration](#github-repository-configuration)
 - [Requirements](#requirements)
 - [Adapting it to your stack](#adapting-it-to-your-stack)
 - [Design decisions worth knowing before you edit](#design-decisions-worth-knowing-before-you-edit)
@@ -103,10 +104,10 @@ half-editing it — a rule file that contradicts your stack is worse than no rul
 
 | Agent | Scope |
 | :-- | :-- |
-| `sc-reviewer` | Separation of concerns, styling, compiler rules, file length, documentation blocks |
-| `sc-i18n-guard` | Translation-key parity between locales; hardcoded UI strings |
-| `sc-security-guard` | Content-Security-Policy integrity, secret hygiene, XSS prevention |
-| `sc-seo-validator` | Metadata completeness, structured data, Open Graph |
+| `agents-reviewer` | Separation of concerns, styling, compiler rules, file length, documentation blocks |
+| `agents-i18n-guard` | Translation-key parity between locales; hardcoded UI strings |
+| `agents-security-guard` | Content-Security-Policy integrity, secret hygiene, XSS prevention |
+| `agents-seo-validator` | Metadata completeness, structured data, Open Graph |
 
 Four narrow agents rather than one broad one, deliberately. A reviewer asked to check everything
 returns five vague observations; a reviewer asked to check one thing returns one specific finding
@@ -229,6 +230,163 @@ reference. Nothing here needs a secret to run.
 
 ---
 
+## GitHub repository configuration
+
+Everything the workflows need, in the order you should set it up. **Nothing here is required to
+clone and read the layer** — this is for when you wire the gate into a real repository.
+
+Skip to [the checklist](#checklist) if you just want the list.
+
+### Step 0 — Create the branches (this is what turns the workflows on)
+
+```bash
+git checkout -b dev  && git push -u origin dev
+git checkout -b prod && git push -u origin prod
+```
+
+Until these exist, **no workflow can trigger** — every one of them is scoped to `dev` or `prod`.
+That is why cloning this repo costs zero Actions minutes.
+
+Then set `dev` as the default branch: **Settings → General → Default branch**. Pull requests should
+target `dev` by default; `prod` is a promotion target, not a place to open work against.
+
+### Step 1 — Repository secrets
+
+**Settings → Secrets and variables → Actions → New repository secret**
+
+| Secret | Required for | How to get it |
+| :-- | :-- | :-- |
+| `GITHUB_TOKEN` | everything | **Do not create this.** GitHub injects it automatically per run. It appears in the workflows but never in your settings |
+| `NEXT_PUBLIC_API_URL` | `ci-cd.yaml` build args | Your backend's public base URL. Not a secret in the cryptographic sense — it ships in the client bundle — but it belongs here because it differs per environment |
+| `NEXT_PUBLIC_APP_URL` | `ci-cd.yaml` build args | This app's own public URL |
+| `DOKPLOY_WEBHOOK_URL` | `ci-cd.yaml` deploy job | Dokploy → your application → **Deployments → Webhook URL**. Treat it as a credential: anyone holding it can trigger a deploy |
+| `DEEPSEEK_CODE_REVIEW_TOKEN` | `deepseek-review.yml` | See [Step 3](#step-3--ai-review-token-optional) |
+| `APP_REPO_TOKEN` | changelog dispatch | See [Step 4](#step-4--cross-repository-token-optional) |
+
+Delete the workflow rather than inventing a value for a secret you do not need. A workflow failing
+on a missing secret every single run trains people to ignore red marks.
+
+> The two `NEXT_PUBLIC_*` values are also read by `quality-gate.yaml`, which sets
+> `NEXT_PUBLIC_API_URL: http://localhost:4000` inline. The gate builds without a live backend on
+> purpose — a gate that needs your infrastructure up is a gate that goes red for reasons unrelated
+> to the change under review.
+
+### Step 2 — Repository variables (not secrets)
+
+**Settings → Secrets and variables → Actions → Variables tab**
+
+| Variable | Purpose |
+| :-- | :-- |
+| `CI_RUNNER` | Runner label. Every job reads `${{ vars.CI_RUNNER \|\| 'ubuntu-latest' }}`, so **leaving it unset is valid** and gives you GitHub's hosted runners. Set it only to point at a self-hosted or third-party runner |
+
+Variables are visible in logs; secrets are masked. A runner label is not sensitive, which is why it
+is a variable.
+
+### Step 3 — AI review token (optional)
+
+`deepseek-review.yml` posts an AI review comment on pull requests into `dev`.
+
+1. Create an API key at your provider's console (the shipped workflow uses
+   [`hustcer/deepseek-review`](https://github.com/hustcer/deepseek-review), which accepts any
+   OpenAI-compatible endpoint).
+2. Add it as `DEEPSEEK_CODE_REVIEW_TOKEN`.
+3. Confirm **Settings → Actions → General → Workflow permissions** allows pull-request writes, or
+   the comment cannot be posted.
+
+> **Read this before enabling it.** The workflow uses `pull_request_target`, which runs with your
+> repository secrets in scope so it can comment on fork pull requests. **It therefore must never
+> check out the pull request's code.** The shipped workflow reads the diff through the API and does
+> not check out. If you modify it, keep that property — adding an `actions/checkout` of the PR ref
+> hands your secrets to anyone who opens a pull request.
+
+Two other deliberate details: no `synchronize` in the trigger types (the action has no sticky
+comment, so every push would add another review), and `dev` only (a `dev → prod` diff re-adds the
+whole stripped AI config and exceeds the provider's diff limit).
+
+Not wiring this up? Delete the workflow file.
+
+### Step 4 — Cross-repository token (optional)
+
+Only if a **separate documentation repository** should regenerate its changelog when this app
+deploys. `ci-cd.yaml` fires a `repository_dispatch` at it.
+
+1. Create a **fine-grained personal access token**: your avatar → **Settings → Developer settings →
+   Personal access tokens → Fine-grained tokens**.
+2. **Resource owner:** the org or account owning the docs repo. **Repository access:** only that
+   repo.
+3. **Permissions:** `Contents: Read and write` — that is the one `repository_dispatch` requires.
+   Nothing else.
+4. Add it here as `APP_REPO_TOKEN`, and edit the target URL in `ci-cd.yaml`.
+
+The dispatch step is guarded by `if: env.APP_REPO_TOKEN != ''`, so **leaving the secret unset skips
+it silently** rather than failing the deploy. Do not delete the step to disable it.
+
+> Prefer fine-grained over classic tokens, and set an expiry you will actually notice. A classic
+> token scoped to `repo` can write to every repository you can reach; this one needs write access
+> to exactly one.
+
+### Step 5 — Container registry
+
+`ci-cd.yaml` pushes to **GitHub Container Registry** (`ghcr.io`) and needs no secret — it
+authenticates with the injected `GITHUB_TOKEN`. What it does need:
+
+**Settings → Actions → General → Workflow permissions** → **Read and write permissions**.
+
+The workflow also declares `packages: write` at job level. Both are required; the repository-level
+setting is a ceiling the job-level declaration cannot exceed.
+
+After the first successful push, the package appears under your profile's **Packages** tab, private
+by default. Make it public there if your deploy target pulls it anonymously.
+
+### Step 6 — Branch protection
+
+Not required for the workflows to run, but it is what converts the gate from advice into
+enforcement. **Settings → Rules → Rulesets → New branch ruleset**, applied to `dev` and `prod`:
+
+| Setting | Value | Why |
+| :-- | :-- | :-- |
+| Require a pull request before merging | on | The gate triggers on `pull_request`. Direct pushes bypass it entirely |
+| Require status checks to pass | on, select **Quality Gate** | Without this the gate reports and merges anyway |
+| Require branches to be up to date | on | Otherwise the gate passes against a stale base |
+| Block force pushes | on | The strip pipeline's history is not recoverable from a force push |
+
+> **`react-doctor` is advisory and must not be a required check.** It reports framework health and
+> never fails a build; marking it required makes it a blocking gate it was not designed to be.
+
+### Step 7 — Dependabot
+
+`.github/dependabot.yml` ships configured. It needs no secret, but it does need
+**Settings → Code security → Dependabot alerts** and **security updates** enabled to be useful.
+
+Its pull requests target `dev`, so they run the full gate like any other change.
+
+### Checklist
+
+```
+□ Branches dev and prod created and pushed          ← nothing runs until this
+□ Default branch set to dev
+□ Secrets: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_APP_URL
+□ Secret:  DOKPLOY_WEBHOOK_URL          (or delete the deploy job)
+□ Secret:  DEEPSEEK_CODE_REVIEW_TOKEN   (or delete deepseek-review.yml)
+□ Secret:  APP_REPO_TOKEN               (or leave unset — the step self-skips)
+□ Variable: CI_RUNNER                   (or leave unset — defaults to ubuntu-latest)
+□ Workflow permissions → Read and write (required for ghcr.io)
+□ Branch ruleset on dev and prod, Quality Gate required
+□ Dependabot alerts enabled
+□ CODEOWNERS updated from @your-github-handle
+```
+
+### Verifying it without burning minutes
+
+Open one throwaway pull request into `dev` with a whitespace change. That exercises
+`quality-gate.yaml`, `deepseek-review.yml`, and `react-doctor.yml` in a single run, and costs one
+gate execution rather than one per workflow.
+
+Do not test the deploy path this way — merging to `prod` triggers a real deploy and the strip
+pipeline. Test that only when the branch actually holds what you want deployed.
+
+---
+
 ## Requirements
 
 Nothing is mandatory. Every piece degrades to "delete this file" rather than breaking the rest.
@@ -256,8 +414,10 @@ Adapt by **tier**, not by line:
   does not apply.
 - `AGENTS.md` sections map one-to-one onto the tiers. Delete a section with its tier.
 
-The `sc-` prefix on subagents is only a namespace, so project agents sort together and never
-collide with built-ins. Rename it to your own initials.
+The `agents-` prefix is only a namespace, so project subagents sort together in the picker and never
+collide with a built-in name. Rename it to anything you like — just rename the `name:` field in the
+frontmatter and the row in `.claude/agents/INDEX.md` together, since the gate's index-coverage check
+verifies both directions.
 
 ---
 

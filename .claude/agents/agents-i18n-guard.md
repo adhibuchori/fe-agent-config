@@ -1,5 +1,5 @@
 ---
-name: sc-i18n-guard
+name: agents-i18n-guard
 description: Validates en↔id translation key parity and detects hardcoded strings.
 model: haiku
 ---
