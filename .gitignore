@@ -1,0 +1,14 @@
+# Agent-local state — never commit
+.claude/settings.local.json
+.claude/session-logs/
+.serena/
+
+# Secrets
+.env
+.env.*
+!.env.*.example
+
+# Tooling
+node_modules/
+.DS_Store
+*.log

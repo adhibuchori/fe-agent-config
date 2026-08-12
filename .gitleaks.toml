@@ -1,0 +1,32 @@
+# Gitleaks configuration.
+#
+# The default ruleset stays on; this file only narrows it where the generic rules
+# misfire on this codebase. Keep additions specific — a broad allowlist turns the
+# scanner into decoration.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Project-specific false positives"
+
+paths = [
+  # Documentation deliberately contains example credentials (e.g. the
+  # "NEVER: const apiKey = 'sk-proj-xxxxx'" snippet in the AI rule files).
+  '''\.claude/''',
+  '''\.agent/''',
+  '''_workflow-source/''',
+  '''(^|/)[A-Z]+\.md$''',
+]
+
+# Match against the whole matched text, not just the extracted secret: what makes
+# these safe is the surrounding assignment, not the value on its own.
+regexTarget = "match"
+
+regexes = [
+  # next-intl key references: `subKey: 'tiers.t1.sub'`, `badgeKey: 'badge.t3'`.
+  # These are dotted lowercase message paths, never credentials.
+  '''(?i)[a-z]*Key\??:\s*['"][a-z][a-z0-9]*(\.[a-zA-Z0-9_]+)+['"]''',
+  # Env var references rather than values: "${GITHUB_PERSONAL_ACCESS_TOKEN}".
+  '''['"]\$\{[A-Z_][A-Z0-9_]*\}['"]''',
+]

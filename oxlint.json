@@ -1,0 +1,62 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "nextjs"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "react/jsx-key": "error",
+    "react/no-array-index-key": "warn",
+    "react/self-closing-comp": "warn",
+    "react/no-danger": "error",
+    "react/jsx-boolean-value": "warn",
+    "react/display-name": "warn",
+    "react/react-in-jsx-scope": "off",
+    "typescript/no-explicit-any": "warn",
+    "typescript/consistent-type-imports": "warn",
+    "typescript/ban-ts-comment": "warn",
+    "typescript/no-non-null-assertion": "warn",
+    "typescript/consistent-type-exports": "warn",
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-has-content": "error",
+    "jsx-a11y/aria-props": "error",
+    "jsx-a11y/aria-role": "error",
+    "jsx-a11y/img-redundant-alt": "warn",
+    "jsx-a11y/interactive-supports-focus": "warn",
+    "jsx-a11y/label-has-associated-control": "error",
+    "jsx-a11y/no-autofocus": "warn",
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "nextjs/no-img-element": "error",
+    "nextjs/no-html-link-for-pages": "error",
+    "unicorn/prefer-string-slice": "warn",
+    "unicorn/no-array-for-each": "warn",
+    "unicorn/prefer-logical-operator-over-ternary": "warn",
+    "no-console": "warn",
+    "max-lines": ["warn", { "max": 150, "skipBlankLines": true, "skipComments": true }]
+  },
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "es2022": true
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "src/lib/api/generated/",
+    ".agents/**",
+    ".claude/**",
+    ".serena/**",
+    ".vscode/**"
+  ],
+  "overrides": [
+    {
+      "files": ["scripts/**", ".github/scripts/**"],
+      "rules": {
+        "no-console": "off",
+        "max-lines": "off",
+        "no-underscore-dangle": "off"
+      }
+    }
+  ]
+}

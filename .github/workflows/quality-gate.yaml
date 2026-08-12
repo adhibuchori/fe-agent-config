@@ -1,0 +1,41 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    # dev is the review gate; prod re-runs it as a safety net on promotion.
+    # Diff steps use origin/${{ github.base_ref }}, so they follow it.
+    branches: [dev, prod]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 20
+
+    env:
+      # Build-time only — the Production Build step needs these set, not a live BE.
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      # CI=true on the runner enables strict mode: a check that cannot run
+      # fails the gate instead of silently passing. See quality-gate.sh.
+      - name: Quality Gate
+        run: .github/scripts/quality-gate.sh "origin/${{ github.base_ref }}"

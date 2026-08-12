@@ -1,0 +1,78 @@
+name: DeepSeek Code Review
+
+on:
+  pull_request_target:
+    # No `synchronize`: the action has no sticky comment, so every push would add
+    # another review. Re-run on demand with `/ask-deepseek` instead.
+    types: [opened, reopened]
+    # dev only. A dev -> prod diff re-adds the whole AI config that
+    # strip-ai-on-pr.yml removed, and GitHub answers 406 for a diff that size.
+    branches: [dev]
+  # On-demand: comment `/ask-deepseek` on a PR. Read from the default branch
+  # (prod), so changes here only take effect once promoted.
+  issue_comment:
+    types: [created]
+
+concurrency:
+  # issue_comment has no pull_request object — fall back to the issue number.
+  group: deepseek-review-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deepseek-review:
+    name: DeepSeek Code Review
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # The action has no HTTP timeout, so a stalled DeepSeek API hangs the job until
+    # this kills it. Successful runs take under a minute.
+    timeout-minutes: 3
+
+    steps:
+      # Never add actions/checkout here: pull_request_target has secrets, and the
+      # action reads the diff over the API without executing PR code.
+      - name: DeepSeek Code Review
+        uses: hustcer/deepseek-review@eccde2e9781008d795e366b951e313e37af88dd5 # v1
+        with:
+          chat-token: ${{ secrets.DEEPSEEK_CODE_REVIEW_TOKEN }}
+          # The action ignores bots, non-PR issues, and anyone outside
+          # allowed-associations.
+          watch-mention: '/ask-deepseek'
+          allowed-associations: 'OWNER,MEMBER,COLLABORATOR'
+          model: deepseek-v4-pro
+          base-url: https://api.deepseek.com
+          temperature: '0.3'
+          exclude-patterns: 'pnpm-lock.yaml,package-lock.json,bun.lock,*.lock,src/lib/api/generated/*,src/messages/*.json'
+          sys-prompt: |
+            You are a code reviewer for a Next.js 16 + React 19 project on strict
+            TypeScript, with Tailwind v4, next-intl (en/id), Zustand, and React
+            Hook Form + Zod.
+
+            Label every finding with a severity: CRITICAL (security or data-loss
+            risk — blocks merge), HIGH (bug or significant quality issue), MEDIUM
+            (maintainability concern), LOW (style or minor suggestion).
+
+            Project rules that apply here:
+            - React Compiler is active — do NOT suggest useMemo/useCallback/memo().
+            - Files <=150 lines, functions <=50 lines, nesting <=4 levels, prefer
+              early returns.
+            - Exactly one JSDoc block per .ts/.tsx file, directly below the imports.
+            - No hardcoded UI text — it must go through next-intl, and en.json and
+              id.json are always changed together.
+            - src/lib/api/generated/ and .env.* must never be edited by hand.
+            - Immutability: never mutate an object, return a new copy instead.
+            - Components PascalCase, hooks camelCase, directories/constants/types
+              kebab-case.
+
+            Do NOT report anything the Quality Gate already enforces on this same
+            PR: formatting, lint, type-check, dependency audit, secret scanning,
+            tests, build, source maps.
+
+            Report an issue only when you can name the input or state that triggers
+            it and what breaks as a result. Prefer a few well-evidenced findings
+            over broad coverage. If the diff is sound, say so briefly. Answer in
+            English, formatted as Markdown.
+          user-prompt: |
+            Review the following diff. Cite the file and line for every finding.

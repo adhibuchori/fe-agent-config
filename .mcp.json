@@ -1,0 +1,178 @@
+{
+  "mcpServers": {
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "claude-code",
+        "--project",
+        ".",
+        "--open-web-dashboard",
+        "false"
+      ],
+      "env": {
+        "ENABLE_TOOL_SEARCH": "true"
+      },
+      "alwaysAllow": [
+        "replace_content",
+        "replace_symbol_body",
+        "insert_after_symbol",
+        "insert_before_symbol",
+        "get_symbols_overview",
+        "find_symbol",
+        "find_referencing_symbols",
+        "find_implementations",
+        "find_declaration",
+        "get_diagnostics_for_file",
+        "rename_symbol",
+        "safe_delete_symbol",
+        "write_memory",
+        "read_memory",
+        "list_memories",
+        "delete_memory",
+        "rename_memory",
+        "edit_memory",
+        "open_dashboard",
+        "activate_project",
+        "get_current_config",
+        "onboarding",
+        "initial_instructions"
+      ]
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "alwaysAllow": [
+        "add_comment_to_pending_review",
+        "add_issue_comment",
+        "add_reply_to_pull_request_comment",
+        "assign_copilot_to_issue",
+        "create_branch",
+        "create_or_update_file",
+        "create_pull_request",
+        "create_repository",
+        "delete_file",
+        "fork_repository",
+        "get_commit",
+        "get_file_contents",
+        "get_label",
+        "get_latest_release",
+        "get_me",
+        "get_release_by_tag",
+        "get_tag",
+        "get_team_members",
+        "get_teams",
+        "issue_read",
+        "issue_write",
+        "list_branches",
+        "list_commits",
+        "list_issue_types",
+        "list_issues",
+        "list_pull_requests",
+        "list_releases",
+        "list_tags",
+        "merge_pull_request",
+        "pull_request_read",
+        "pull_request_review_write",
+        "push_files",
+        "request_copilot_review",
+        "search_code",
+        "search_issues",
+        "search_pull_requests",
+        "search_repositories",
+        "search_users",
+        "sub_issue_write",
+        "update_pull_request",
+        "update_pull_request_branch"
+      ]
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "alwaysAllow": ["resolve-library-id", "query-docs"]
+    },
+    "dokploy-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@dokploy/mcp"],
+      "env": {
+        "DOKPLOY_URL": "https://<deployment-platform-host>",
+        "DOKPLOY_API_KEY": "${DOKPLOY_API_TOKEN}"
+      }
+    },
+    "cloudflare": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${CLOUDFLARE_API_TOKEN}"
+      }
+    },
+    "hostinger-hosting": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--package=hostinger-api-mcp@latest", "hostinger-hosting-mcp"],
+      "env": { "HOSTINGER_API_TOKEN": "${HOSTINGER_API_TOKEN}" }
+    },
+    "hostinger-domains": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--package=hostinger-api-mcp@latest", "hostinger-domains-mcp"],
+      "env": { "HOSTINGER_API_TOKEN": "${HOSTINGER_API_TOKEN}" }
+    },
+    "hostinger-dns": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--package=hostinger-api-mcp@latest", "hostinger-dns-mcp"],
+      "env": { "HOSTINGER_API_TOKEN": "${HOSTINGER_API_TOKEN}" }
+    },
+    "hostinger-vps": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--package=hostinger-api-mcp@latest", "hostinger-vps-mcp"],
+      "env": { "HOSTINGER_API_TOKEN": "${HOSTINGER_API_TOKEN}" }
+    },
+    "db-dev": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--with", "mcp==1.9.4", "postgres-mcp", "--access-mode=unrestricted"],
+      "env": { "DATABASE_URI": "${DB_DEV_URI}" },
+      "alwaysAllow": [
+        "list_schemas",
+        "list_objects",
+        "get_object_details",
+        "explain_query",
+        "analyze_workload_indexes",
+        "analyze_query_indexes",
+        "analyze_db_health",
+        "get_top_queries",
+        "execute_sql"
+      ]
+    },
+    "db-prod": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--with", "mcp==1.9.4", "postgres-mcp", "--access-mode=unrestricted"],
+      "env": { "DATABASE_URI": "${DB_PROD_URI}" },
+      "alwaysAllow": [
+        "list_schemas",
+        "list_objects",
+        "get_object_details",
+        "explain_query",
+        "analyze_workload_indexes",
+        "analyze_query_indexes",
+        "analyze_db_health",
+        "get_top_queries"
+      ]
+    }
+  }
+}

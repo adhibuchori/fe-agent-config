@@ -1,0 +1,11 @@
+# Requests reviewers automatically. Without branch protection this is a prompt, not
+# a gate. Later rules win, so the narrow entries below override the catch-all.
+
+*                       @your-github-handle
+
+# Anything that decides what reaches production deserves a deliberate look.
+/.github/workflows/     @your-github-handle
+/.github/dependabot.yml @your-github-handle
+/.gitleaks.toml         @your-github-handle
+/Dockerfile             @your-github-handle
+/scripts/audit-check.ts @your-github-handle

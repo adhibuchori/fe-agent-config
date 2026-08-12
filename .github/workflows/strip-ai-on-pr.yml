@@ -1,0 +1,41 @@
+name: Strip AI Files on PR Merge to Prod
+
+on:
+  pull_request:
+    branches:
+      - prod
+    types: [closed]
+
+# Deliberately not the prod-deploy group: a queued strip run was cancelled
+# silently there. See README § CI/CD.
+concurrency:
+  group: prod-strip-ai
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  strip-ai:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: prod
+          # Full history: the back-merge needs both branches and a real merge base.
+          fetch-depth: 0
+
+      # /promote-dokploy runs these same three scripts locally when CI is
+      # unavailable, so both routes leave an identical prod tree.
+      - name: Strip AI Config From Prod
+        run: .github/scripts/strip-ai.sh
+
+      - name: Back-merge Prod Into Dev
+        run: .github/scripts/back-merge-prod.sh
+
+      - name: Verify Strip Post-conditions
+        run: .github/scripts/verify-strip.sh
