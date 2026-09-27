@@ -8,7 +8,7 @@
 # reach git as pathspecs instead of being expanded against the working tree.
 set -f
 
-STRIP_PATHS=".agent .agents .claude .gemini .serena .impeccable _workflow-source GEMINI.md AGENTS.md CLAUDE.md SSOT.md PRODUCT.md PRODUCT.example.md DESIGN.md DESIGN.example.md skills-lock.json .mcp.json .github/gemini.yaml .github/skills promote-deploy-logs .skillspector-baseline.yaml"
+STRIP_PATHS=".agent .agents .claude .gemini .serena .impeccable _workflow-source AGENTS.md CLAUDE.md GEMINI.md SSOT.md PRODUCT.md PRODUCT.example.md DESIGN.md DESIGN.example.md skills-lock.json .mcp.json .skillspector-baseline.yaml .github/gemini.yaml .github/skills promote-deploy-logs"
 # Dev-only files matched by pattern, one pathspec per word, for example "debug*.config.ts".
 STRIP_GLOBS=""
 

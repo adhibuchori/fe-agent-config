@@ -1,13 +1,13 @@
+# Strips the AI config from prod after a merge, back-merges into dev and checks both, through
+# agent-config-kit's reusable strip-ai workflow. /promote-deploy runs .github/scripts/ by hand.
 name: Strip AI Files on PR Merge to Prod
 
 on:
   pull_request:
-    branches:
-      - prod
+    branches: [prod]
     types: [closed]
 
-# Deliberately not the deploy group: a queued strip run was cancelled silently there.
-# Why: https://github.com/adhibuchori/fe-agent-config#after-a-merge-into-prod
+# Not the deploy's group: a strip queued behind a deploy in a shared group can be cancelled silently.
 concurrency:
   group: prod-strip-ai
   cancel-in-progress: false
@@ -18,30 +18,10 @@ permissions:
 jobs:
   strip-ai:
     name: Strip AI Files
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    timeout-minutes: 15
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'prod'
+    if: github.event.pull_request.merged == true
     permissions:
       contents: write # push the strip commit to prod and the back-merge to dev
-
-    steps:
-      # The scripts below push with the token that checkout stores, so this
-      # checkout keeps it. Nothing in this job uploads an artifact.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: prod
-          # Full history: the back-merge needs both branches and a real merge base.
-          fetch-depth: 0
-          persist-credentials: true
-
-      # /promote-deploy runs these same three scripts locally when CI is
-      # unavailable, so both routes leave an identical prod tree.
-      - name: Strip AI Config From Prod
-        run: .github/scripts/strip-ai.sh
-
-      - name: Back-merge Prod Into Dev
-        run: .github/scripts/back-merge-prod.sh
-
-      - name: Verify Strip Post-conditions
-        run: .github/scripts/verify-strip.sh
+    uses: adhibuchori/agent-config-kit/.github/workflows/strip-ai.yml@8699a5bed2aa9d986c459f65b3e519c7bbe162d1 # v1.2.0
+    with:
+      # The reusable workflow's list plus this: the same list as .github/scripts/strip-paths.sh.
+      extra-paths: promote-deploy-logs

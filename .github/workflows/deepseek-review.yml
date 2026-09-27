@@ -1,92 +1,65 @@
+# An AI review of each pull request into dev by DeepSeek, through agent-config-kit's reusable
+# workflow. It needs the DEEPSEEK_API_KEY secret (without it, it passes); README § CI/CD has the rest.
 name: DeepSeek Code Review
 
 on:
   pull_request:
-    # No `synchronize`: the action has no sticky comment, so every push would add
-    # another review. Re-run on demand with `/ask-deepseek` instead.
-    types: [opened, reopened]
-    # dev only. A dev -> prod diff re-adds the whole AI config that
-    # strip-ai-on-pr.yml removed, and GitHub answers 406 for a diff that size.
+    # dev only: a dev -> prod diff re-adds the AI config the strip removed.
+    types: [opened, reopened, ready_for_review]
     branches: [dev]
-  # On-demand: comment `/ask-deepseek` on a PR. GitHub runs this event from the
-  # workflow file on the default branch, so edits here reach comments only once promoted.
+  # `/ask-deepseek` on a pull request. GitHub runs it from the default branch's copy of this file.
   issue_comment:
     types: [created]
-
-concurrency:
-  # issue_comment has no pull_request object — fall back to the issue number.
-  group: deepseek-review-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
 
+# A newer request replaces a running review; any other comment gets a group of its own.
+concurrency:
+  group: deepseek-review-${{ github.event.pull_request.number || github.event.issue.number }}-${{ (github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/ask-deepseek')) && github.run_id || 'review' }}
+  cancel-in-progress: true
+
 jobs:
   deepseek-review:
     name: DeepSeek Code Review
-    # pull_request: a branch of this repository only; a fork's run gets no secret, so it is skipped.
-    # issue_comment: `/ask-deepseek` on a pull request by someone with write access, nothing else.
+    # A branch of this repository (a fork's run gets no secret), or /ask-deepseek from an owner,
+    # member or collaborator. The job checks nothing out: it reads the diff over the API.
     if: >-
       (github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/ask-deepseek') &&
+      startsWith(github.event.comment.body, '/ask-deepseek') &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    # The action has no HTTP timeout, so a stalled DeepSeek API hangs the job until
-    # this kills it. Successful runs take under a minute.
-    timeout-minutes: 3
     permissions:
-      contents: read # the action reads the pull request's diff over the API
-      pull-requests: write # the action posts its review as a pull request comment
+      contents: read # read the pull request and its changed files over the API
+      pull-requests: write # post or update the one review comment
+    uses: adhibuchori/agent-config-kit/.github/workflows/deepseek-review.yml@8699a5bed2aa9d986c459f65b3e519c7bbe162d1 # v1.2.0
+    with:
+      # What this repository is and the rules no gate checks; lockfiles are always left out.
+      instructions: |
+        Next.js 16 + React 19 project on strict
+        TypeScript, with Tailwind v4, next-intl (en/id), Zustand, and React
+        Hook Form + Zod.
 
-    steps:
-      # No actions/checkout: the action reads the diff over the API and runs no
-      # code from the pull request.
-      - name: DeepSeek Code Review
-        uses: hustcer/deepseek-review@eccde2e9781008d795e366b951e313e37af88dd5 # v1.21
-        with:
-          chat-token: ${{ secrets.DEEPSEEK_CODE_REVIEW_TOKEN }}
-          # The action ignores bots, non-PR issues, and anyone outside
-          # allowed-associations.
-          watch-mention: '/ask-deepseek'
-          allowed-associations: 'OWNER,MEMBER,COLLABORATOR'
-          model: deepseek-v4-pro
-          base-url: https://api.deepseek.com
-          temperature: '0.3'
-          exclude-patterns: 'pnpm-lock.yaml,package-lock.json,bun.lock,*.lock,src/lib/api/generated/*,src/messages/*.json'
-          sys-prompt: |
-            You are a code reviewer for a Next.js 16 + React 19 project on strict
-            TypeScript, with Tailwind v4, next-intl (en/id), Zustand, and React
-            Hook Form + Zod.
+        Project rules that apply here:
+        - React Compiler is active — do NOT suggest useMemo/useCallback/memo().
+        - Files <=150 lines (blank lines and comments not counted), nesting <=4
+          levels.
+        - A component holds no logic: state, effects and derived values live in
+          a hook under src/hooks/, pure functions in src/lib/.
+        - One JSDoc block per exported function or component, directly above it.
+        - No hardcoded UI text — it must go through next-intl, and en.json and
+          id.json are always changed together.
+        - src/lib/api/generated/ and .env.* must never be edited by hand.
+        - Component files kebab-case exporting PascalCase names; hook files and
+          names camelCase; directories, constants and types kebab-case.
 
-            Label every finding with a severity: CRITICAL (security or data-loss
-            risk — blocks merge), HIGH (bug or significant quality issue), MEDIUM
-            (maintainability concern), LOW (style or minor suggestion).
-
-            Project rules that apply here:
-            - React Compiler is active — do NOT suggest useMemo/useCallback/memo().
-            - Files <=150 lines (blank lines and comments not counted), nesting <=4
-              levels.
-            - A component holds no logic: state, effects and derived values live in
-              a hook under src/hooks/, pure functions in src/lib/.
-            - One JSDoc block per exported function or component, directly above it.
-            - No hardcoded UI text — it must go through next-intl, and en.json and
-              id.json are always changed together.
-            - src/lib/api/generated/ and .env.* must never be edited by hand.
-            - Component files kebab-case exporting PascalCase names; hook files and
-              names camelCase; directories, constants and types kebab-case.
-
-            Do NOT report anything the Quality Gate already enforces on this same
-            PR: formatting, lint, type-check, dependency audit, secret scanning,
-            tests and 100% coverage of the logic layer, dead code, folder shape,
-            translation parity, hook placement, re-exports, logic in components,
-            Tailwind class form, error-code mapping, build, source maps.
-
-            Report an issue only when you can name the input or state that triggers
-            it and what breaks as a result. Prefer a few well-evidenced findings
-            over broad coverage. If the diff is sound, say so briefly. Answer in
-            English, formatted as Markdown.
-          user-prompt: |
-            Review the following diff. Cite the file and line for every finding.
+        Do NOT report anything the Quality Gate already enforces on this same
+        PR: formatting, lint, type-check, dependency audit, secret scanning,
+        tests and 100% coverage of the logic layer, dead code, folder shape,
+        translation parity, hook placement, re-exports, logic in components,
+        Tailwind class form, error-code mapping, build, source maps.
+      exclude: 'src/lib/api/generated/* src/messages/*.json'
+    secrets:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}

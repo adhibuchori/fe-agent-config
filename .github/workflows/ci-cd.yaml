@@ -1,3 +1,5 @@
+# Deploys prod through the deploy webhook when a pull request into prod is merged, using
+# agent-config-kit's reusable deploy-webhook workflow. README § CI/CD has the rest.
 name: CI/CD Pipeline
 
 on:
@@ -5,8 +7,7 @@ on:
     types: [closed]
     branches: [prod]
 
-# One deploy at a time, never cancelled: a queued deploy of the newest merge
-# replaces an older queued one, which is what prod wants.
+# Deploys queue behind each other and none is cancelled: every merge into prod gets its deploy.
 concurrency:
   group: deploy-prod
   cancel-in-progress: false
@@ -15,40 +16,16 @@ permissions:
   contents: read
 
 jobs:
-  # The deploy platform builds from git source; this job only fires its webhook.
-  # Never deploy from a repo webhook instead: it fires on bot commits and cannot be filtered.
   trigger-deploy:
     name: Trigger Deploy
-    # Only a merge into prod deploys. A pull request closed without merging
-    # starts the workflow but skips this job.
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'prod'
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    # Must stay above the retry window in trigger-deploy.sh (currently 9 min).
-    timeout-minutes: 12
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: prod
-          sparse-checkout: .github/scripts
-          persist-credentials: false
-
-      # A fixed ref, not github.ref: the deploy is always of prod.
-      - name: Trigger Deploy
-        env:
-          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
-        run: .github/scripts/trigger-deploy.sh refs/heads/prod
-
-      # Skips itself while the secret is unset; the target repository sits in env, not in run.
-      - name: Trigger Docs Changelog
-        if: success() && env.APP_REPO_TOKEN != ''
-        env:
-          APP_REPO_TOKEN: ${{ secrets.APP_REPO_TOKEN }}
-          DOCS_REPO: <github-org>/<docs-repo>
-        run: |
-          curl --fail-with-body -sS -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${APP_REPO_TOKEN}" \
-            "https://api.github.com/repos/${DOCS_REPO}/dispatches" \
-            -d '{"event_type":"app-deployed"}'
+    # Only a merge deploys: a pull request closed without merging skips this job.
+    if: github.event.pull_request.merged == true
+    permissions:
+      contents: read
+    uses: adhibuchori/agent-config-kit/.github/workflows/deploy-webhook.yml@8699a5bed2aa9d986c459f65b3e519c7bbe162d1 # v1.2.0
+    with:
+      # The docs repository (<github-org>/<docs-repo>) to send app-deployed to; empty sends nothing.
+      docs-repository: ''
+    secrets:
+      DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+      DOCS_DISPATCH_TOKEN: ${{ secrets.APP_REPO_TOKEN }}
