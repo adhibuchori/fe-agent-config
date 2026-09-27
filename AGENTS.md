@@ -48,7 +48,7 @@ For Serena MCP availability rules and session-start requirements → see CLAUDE.
 
 **Rule 1** — Think before coding. Read first, always. Do not write a single line before Phase 1 is complete.
 
-**Rule 2** — Simplicity first. Minimal change that achieves the goal. Do not add abstractions that were not requested.
+**Rule 2** — Simplicity first. Minimal change that achieves the goal. Do not add abstractions that were not requested. Reuse before writing, in this order: this codebase, the standard library (JavaScript and Web APIs), the built-ins of React, Next.js and the HTML platform, a dependency already in `package.json`; only then add a dependency or new code.
 
 **Rule 3** — Surgical changes. Do not touch files or logic outside the scope of the task.
 

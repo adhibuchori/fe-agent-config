@@ -21,6 +21,8 @@ session: one line per agreement, under 5 KB. Operational facts live in `.claude/
 
 - Deliver the ask; a bigger refactor is a separate offer. "Make it the same" still has a boundary:
   fix what is broken, report deliberate differences with their cost.
+- Reuse before writing, in this order: this codebase, the language's standard library, the
+  framework's built-ins, a dependency already installed. Only then add a dependency or new code.
 - A finding in one place is checked in its siblings unasked (the same component, handler or config
   elsewhere), and reported per place.
 - "Resolve all findings" includes pre-existing ones, and every review runs the dependency audit.
