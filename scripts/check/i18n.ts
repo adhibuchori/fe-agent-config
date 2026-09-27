@@ -4,6 +4,9 @@
  * 1. Unused translation keys (keys in en.json not referenced in src/)
  * 2. Sync mismatch (keys present in en.json but missing in id.json, or vice versa)
  * 3. Unscoped useTranslations() calls (Rule 20 violation)
+ * 4. Missing keys: a literal t('key') in a scoped file that none of the file's namespaces holds
+ *    in en.json. It would throw MISSING_MESSAGE at runtime, on the one screen nobody opened.
+ *    A key built at runtime (t(`${x}.title`)) cannot be resolved; it is listed, not failed.
  *
  * Exit code 1 if unused keys or sync mismatch found.
  * Unscoped violations are warnings only (exit 0).
@@ -227,6 +230,39 @@ const unusedKeys = enKeys.filter((key) => {
   return true;
 });
 
+/* ── Missing keys: a scoped t('key') that no namespace of its file holds ──── */
+
+function findMissingKeys(
+  allKeys: Set<string>,
+  files: string[],
+): { missing: string[]; dynamic: string[] } {
+  const missing: string[] = [];
+  const dynamic: string[] = [];
+  const namespaces = extractNamespaceFromUsage(files);
+  for (const [rel, spaces] of namespaces.entries()) {
+    const content = readFileSync(join(ROOT, rel), 'utf-8');
+    const literal = /\bt(?:[A-Z]\w*)?(?:\.(?:rich|raw|markup|has))?\(\s*(['"])([^'"]+)\1/g;
+    let match: RegExpExecArray | null;
+    while ((match = literal.exec(content)) !== null) {
+      const key = match[2] ?? '';
+      const found = spaces.some(
+        (ns) =>
+          allKeys.has(`${ns}.${key}`) || [...allKeys].some((k) => k.startsWith(`${ns}.${key}.`)),
+      );
+      if (!found)
+        missing.push(`${rel}: '${key}' is in none of ${spaces.map((ns) => `'${ns}'`).join(', ')}`);
+    }
+    const built = /\bt(?:[A-Z]\w*)?(?:\.(?:rich|raw|markup))?\(\s*`[^`]*\$\{/g;
+    while ((match = built.exec(content)) !== null) dynamic.push(`${rel}: ${match[0]}…`);
+  }
+  return { missing, dynamic };
+}
+
+const { missing: missingKeys, dynamic: dynamicKeys } = findMissingKeys(
+  new Set(enKeys),
+  sourceFiles,
+);
+
 /* ── Report ─────────────────────────────────────────────────────────────────── */
 
 let hasErrors = false;
@@ -251,6 +287,18 @@ if (unusedKeys.length > 0) {
   hasErrors = true;
 } else {
   console.log('[i18n] ✓ No unused keys found');
+}
+
+if (missingKeys.length > 0) {
+  console.error(`\n[i18n] ✗ Keys used in code but missing from en.json (${missingKeys.length}):`);
+  for (const k of missingKeys) console.error(`  - ${k}`);
+  hasErrors = true;
+} else {
+  console.log('[i18n] ✓ Every literal key a scoped translator uses exists in en.json');
+}
+if (dynamicKeys.length > 0) {
+  console.warn(`\n[i18n] ⚠ Keys built at runtime, not checked (${dynamicKeys.length}):`);
+  for (const k of dynamicKeys) console.warn(`  - ${k}`);
 }
 
 if (unscopedViolations.length > 0) {

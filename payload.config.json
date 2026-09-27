@@ -1,0 +1,12 @@
+{
+  "encryption": "strict",
+  "spec": "openapi.json",
+  "registry": "src/lib/api/endpoints",
+  "exemptions": {},
+  "routeLiterals": {
+    "prefix": "/api/",
+    "allow": ["src/app/api/", "src/lib/api/generated/"]
+  },
+  "fetchAllow": ["src/lib/payload/", "src/lib/api/client/", "src/app/api/"],
+  "peers": []
+}

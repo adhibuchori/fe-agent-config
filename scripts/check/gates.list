@@ -17,12 +17,16 @@ code	bun run check:soc
 code	bun run check:tailwind
 code	bun run check:error-codes
 code	bun run check:error-catch
+code	bun run check:dockerfile
 code	bun run .github/scripts/check-comment-style.ts
 code	bash .github/scripts/check-comment-blocks.sh
 # Optional modules: a repo that does not adopt one deletes its line with its rule and standard.
 code	bun run check:dialog-desc
 code	bun run check:responsive
 code	bun run check:skeleton-switch
+code	bun run check:skeleton-pairs
+code	bun run check:endpoints
+code	bun run check:crypto-interop
 all	bash scripts/check/ai-config.sh
 code	bash scripts/check/ai-config-probes.sh
 docs	bash scripts/sync/rules.sh --check

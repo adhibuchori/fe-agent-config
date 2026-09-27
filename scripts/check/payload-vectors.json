@@ -1,0 +1,90 @@
+{
+  "about": [
+    "Payload envelope test vectors (.claude/PAYLOAD-CONTRACT.md § Tests and interop).",
+    "Every implementation proves two things against this file: its AAD builder produces `aad` byte for byte,",
+    "and it opens `ct` back to `plaintext` with the AES key in `testBytes`. It must also refuse every entry in `rejects`.",
+    "At the AEAD layer, below the freshness check, so a fixed `ts` never expires. The key is published test",
+    "material, never a real key. Identical in every repo that speaks the format; never regenerate it to make",
+    "a failing implementation pass."
+  ],
+  "testBytes": "A1dRUjnNLjyKuQWLn4C9ffMEvPCJbHW-ndriMKcS8t8",
+  "vectors": [
+    {
+      "name": "request",
+      "kind": "request",
+      "method": "POST",
+      "pattern": "/api/notes",
+      "kid": "k1",
+      "plaintext": {
+        "title": "Groceries",
+        "done": false,
+        "tags": [
+          "home"
+        ]
+      },
+      "ts": 1767225600000,
+      "aad": "1.POST./api/notes.k1.1767225600000",
+      "iv": "ecFX4ukuDeO9L05Z",
+      "ct": "rA4L-EPz-SJuQIRiUyinQYpY53J5mT7tDz77jtOS0C71VXDzZNYBJmn1ScAgi1TtFrs4_cMoqT5NfbUTyyCaA-FQ"
+    },
+    {
+      "name": "response",
+      "kind": "response",
+      "status": 201,
+      "pattern": "/api/notes/:id",
+      "kid": "k1",
+      "plaintext": {
+        "id": "n_42",
+        "text": "Multi-byte text survives: café, ümlaut, 東京, ✓"
+      },
+      "ts": 1767225600000,
+      "aad": "1.201./api/notes/:id.k1.1767225600000",
+      "iv": "aN0RZdgEX3hEWCUi",
+      "ct": "nuHCFLPyFZDNu7bax1T9VdnY_0t-wPhvJPsO9gRyrCzD0vU8e48U95vp9XY1lWl0bhcnQ9UehK1tY0M7ByZeGxL_kB977sXP-2ayusio4XYSdih8C_J9J7wjaA4"
+    },
+    {
+      "name": "agreed-key",
+      "kind": "request",
+      "method": "DELETE",
+      "pattern": "/api/notes/:id",
+      "kid": "ecdh",
+      "plaintext": null,
+      "ts": 1767225600000,
+      "aad": "1.DELETE./api/notes/:id.ecdh.1767225600000",
+      "iv": "6YvxFO2i3DUzAwZD",
+      "ct": "1BMx2davwohtMoPoiZIg3UxoBc4"
+    }
+  ],
+  "rejects": [
+    {
+      "name": "another route",
+      "vector": "request",
+      "aad": "1.POST./api/notes/:id/share.k1.1767225600000",
+      "why": "the AAD names the route pattern"
+    },
+    {
+      "name": "another method",
+      "vector": "request",
+      "aad": "1.PUT./api/notes.k1.1767225600000",
+      "why": "the AAD names the method"
+    },
+    {
+      "name": "another status",
+      "vector": "response",
+      "aad": "1.200./api/notes/:id.k1.1767225600000",
+      "why": "the AAD names the status"
+    },
+    {
+      "name": "another key id",
+      "vector": "response",
+      "aad": "1.201./api/notes/:id.k2.1767225600000",
+      "why": "the AAD names the key id"
+    },
+    {
+      "name": "another timestamp",
+      "vector": "agreed-key",
+      "aad": "1.DELETE./api/notes/:id.ecdh.1767225600001",
+      "why": "the AAD names the timestamp"
+    }
+  ]
+}

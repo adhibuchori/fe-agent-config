@@ -157,6 +157,9 @@ const BROWSER = [
   'IntersectionObserver',
   'ResizeObserver',
   'MutationObserver',
+  /* A render-loop callback (react-three-fiber) runs every frame: it belongs in a named motion
+     hook, like any other effect. */
+  'useFrame(',
 ];
 
 /* A repo with no presentation layer yet has nothing to audit, and says so. */
