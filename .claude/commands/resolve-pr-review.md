@@ -55,6 +55,19 @@ Parse each suggestion and extract:
 
 If **no review comments found**, inform the user and exit.
 
+Fetch the review threads too; every inline comment belongs to one, and a thread already resolved
+needs nothing:
+
+```bash
+gh api graphql -F owner={OWNER} -F repo={REPO} -F pr={PR_NUMBER} -f query='
+query($owner: String!, $repo: String!, $pr: Int!) { repository(owner: $owner, name: $repo) {
+  pullRequest(number: $pr) { reviewThreads(first: 100) { nodes {
+    id isResolved path line comments(first: 1) { nodes { databaseId } } } } } } }'
+```
+
+Match each comment to its thread (the thread's first comment `databaseId` is the comment's `id`)
+and skip the resolved ones.
+
 ---
 
 ## Step 3: Validate Against Project Rules
@@ -146,4 +159,12 @@ Once the user approves the plan:
      -f body="<applied in <sha>, or declined and why>"
    gh pr comment {PR_NUMBER} --repo {OWNER/REPO} \
      --body "<what was applied, what was declined and why, and the gate status>"
+   ```
+
+4. Resolve each thread you answered, applied or declined with its reason, so the PR's readiness
+   check and `/merge-pr` can pass; leave a thread open only when you asked the reviewer a question in
+   it:
+
+   ```bash
+   gh api graphql -F id={THREAD_ID} -f query='mutation($id: ID!) { resolveReviewThread(input: { threadId: $id }) { thread { isResolved } } }'
    ```

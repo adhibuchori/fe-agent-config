@@ -27,11 +27,15 @@ The base branch is **`dev`**, never `main`: this repo promotes `internal/{scope}
 - **Commits**: summarise what was done from the log
 - **Diff stat**: which files changed
 
+Stop when the current branch is `dev`, `prod` or the default branch: a pull request starts from a
+work branch. Run the gates before drafting (`bash scripts/check/gates.sh`); never open a pull
+request from a red gate.
+
 ## Step 1: Collect What Is Missing
 
 Ask for anything still needed, in one prompt: a ticket ID (optional, e.g. `PROJ-42`), a
-one-sentence description of the change if the commits do not make it clear, and any breaking change
-or follow-up.
+one-sentence description of the change if the commits do not make it clear, any breaking change
+or follow-up, and whether a companion docs repo needs its own pull request.
 
 ## Step 2: Draft
 

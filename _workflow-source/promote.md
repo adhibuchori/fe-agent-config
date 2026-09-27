@@ -232,8 +232,10 @@ it must stay backward-compatible with the code still running.
 3. Hand the migration to the user. It runs as the database owner role, from their shell, with the
    production connection string they hold; the agent's database role has no DDL rights and must
    not get them. Ask them to type `! <migrate-command>` and wait for its output.
-4. Verify through `db-prod`, read-only: `<applied-migrations-query>` must match the number of
-   migration files on `prod`.
+4. Verify through `db-prod`, read-only: `<applied-migrations-query>` must show every migration file
+   on `prod` as applied. For a tool that records a count of applied files (drizzle) compare the
+   count; for one that records only the head revision (Alembic's `version_num`) compare that head
+   with the newest revision on `prod`, never a count.
 
 A repo that owns no schema depends on its backend's: before this deploy lands, confirm the backend's
 production migrations match its own `prod` branch, and promote the backend first if they do not.
@@ -254,7 +256,11 @@ owns no schema applies, and the backend it reads is checked instead.
 **Browser pass for what jsdom cannot prove.** When this promotion changes sign-in, sessions, or
 another flow that only a browser shows, walk it against `dev` with a test account (never a real
 person's), in every locale the app ships, before merging. Report each step as passed, failed or not
-run.
+run. The usual list: a one-time code never appears in the URL; a reset link opened in a fresh tab
+offers a new code; signing out and pressing Back lands on the sign-in page; pressing Pay twice
+raises one payment; a stopped backend shows an error, not a spinner; the flow works with the
+keyboard alone and with reduced motion on. After a change to third-party sign-in, start it on the
+deployed site: it must reach the provider's account chooser, not a redirect-URI error.
 
 ### 2.4 Merge — never with `--delete-branch`
 

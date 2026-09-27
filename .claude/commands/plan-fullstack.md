@@ -119,3 +119,15 @@ If no open questions → state: "No blockers — ready to execute."
 - **SDK Rule**: Always use the generated SDK from `src/lib/api/generated/`. If it's missing an endpoint, the task is to update the BE and regenerate first.
 - **Upstream services are invisible to FE**: Never plan a direct fetch to anything behind <backend-service>.
 - **Sync i18n**: Never add a translation to one file without the other.
+
+## Checks every fullstack plan carries
+
+- **Authorization is the backend's.** Each new endpoint is scoped to the roles that may call it and
+  enforced on the server; a frontend guard is a convenience, never the check (AGENTS.md §M).
+- **States.** Every new screen names its loading, empty and error states and where each lives (§N).
+- **Keys.** A new service hook comes with its entry in the query-key factory.
+- **The store holds UI state only**: never server data, never the session.
+- **An endpoint not built yet** is a labelled fixture under `src/testing/fixtures/` with a
+  follow-up task, never data invented in a component.
+- Where `payload.config.json` exists: the new routes' policies (and any exemption's reason) are
+  planned on both sides, and `generate:endpoints` runs in both repos after the spec changes (§P).

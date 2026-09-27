@@ -340,6 +340,11 @@ owns no schema applies, and the backend it reads is checked instead.
 
 Run the adapter's `trigger`. It performs the same action the CI deploy would have, without a runner.
 
+A static site deployed by upload (the files, not a container): build first when the deploy command
+does not build, because an upload of a stale output folder publishes silently; after the upload,
+load a page this change touched and confirm its content changed, because an upload of an unchanged
+bundle looks exactly like a successful one.
+
 If the trigger is a deploy webhook, use the repository's trigger script (for example
 `.github/scripts/trigger-deploy.sh refs/heads/prod`, with the webhook URL from the repository
 secrets exported in the user's shell), never a bare `curl`. A webhook that expects a push payload
@@ -359,7 +364,10 @@ previous container answering.
 
 ### 3.3 Smoke test
 
-Check `https://<app-host>` and exercise the change itself, not just that the process is up.
+Check `https://<app-host>` and exercise the change itself, not just that the process is up. When
+the change touches sign-in, sessions or checkout, walk the browser pass from `/promote` §2.3 against
+the live site with a test account; after a change to third-party sign-in, start it: it must reach
+the provider's account chooser, not a redirect-URI error.
 
 For anything touching CORS, test with the **actual frontend origin**. Rejecting `evil.example`
 proves nothing: an origin allowlist that is unset and falls back to a development origin rejects

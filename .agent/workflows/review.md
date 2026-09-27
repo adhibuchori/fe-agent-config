@@ -57,6 +57,10 @@ never silence one with `oxlint-disable` (Rule 28): fix the underlying issue.
 Read `AGENTS.md` before auditing. Each check below names its rule; where a gate enforces it, a red
 gate is the finding and the text here is what to look for beside it.
 
+When the diff touches what a specialist owns, run it on the same scope and merge its findings:
+`agents-i18n-guard` for user-facing strings and message catalogues, `agents-seo-validator` for
+metadata, robots or share images, and `/a11y-audit` (Step 5) for `.tsx` that renders UI.
+
 ### 3.1 Separation of concerns (Rules 5–7, 32)
 
 - CRITICAL — A component holds logic: `useState`, `useEffect`, `useLayoutEffect`, `useReducer`,
@@ -79,6 +83,11 @@ gate is the finding and the text here is what to look for beside it.
 - MEDIUM — A per-query `staleTime` / `gcTime` override without a comment saying why (Rule 18).
 - HIGH — A request that waits for another request's answer when the URL or the server already
   holds the value it needs (`.claude/rules/web/data-fetching.md` W1–W6).
+- CRITICAL — Where `payload.config.json` exists (§P): a new route missing from the registry, a
+  typed route path, a `fetch` outside the transport, or a policy edited in the generated registry
+  (`check:endpoints` decides the last three).
+- HIGH — A session or role check done only in the browser (§M), or a component that renders
+  `error.message` or a problem `detail` instead of mapping the code (§N).
 
 ### 3.3 i18n (Rules 19–22)
 

@@ -68,10 +68,15 @@ gh pr merge {PR} --merge
 ```
 
 Never add `--delete-branch`: it cannot see which head it deletes, and the safety hook refuses it.
+Never add `--auto` either: with checks pending it only queues the merge, and deleting the head
+afterwards closes the PR unmerged. If `gh` refuses because checks are still running, wait for them
+and start again at Step 2.
 
 ## Step 5: Delete an `internal/*` head by name
 
-Only when Step 3 printed an `internal/*` head the user is not keeping, and only that name:
+Only when Step 3 printed an `internal/*` head the user is not keeping, only that name, and only
+after the merge is confirmed: `gh pr view {PR} --json state -q .state` must print `MERGED`. Anything
+else means stop and delete nothing.
 
 ```bash
 git push origin --delete internal/<scope>
