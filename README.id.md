@@ -463,7 +463,7 @@ opsional). Gerbangnya juga butuh Bun, Node.js 20+, gitleaks, dan uv. Daftar leng
 7. **Buktikan di mesin Anda:**
 
    ```bash
-   bash scripts/check/hook-probes.sh        # setiap aturan hook, dua arah; beberapa menit
+   bash scripts/check/hook-probes.sh        # setiap aturan hook, dua arah; sekitar sembilan menit
    bash scripts/check/ai-config.sh          # sitasi aturan, anggaran konteks, wiring hook, pin MCP
    bash scripts/sync/workflows.sh --check   # mirror command cocok dengan sumbernya
    bash scripts/sync/rules.sh --check       # mirror aturan cocok dengan .claude/rules/
@@ -762,7 +762,7 @@ menjalankan cek yang sama dan lebih banyak lagi, 37 langkah, di setiap pull requ
 | [gates.sh](scripts/check/gates.sh) + [gates.list](scripts/check/gates.list) | Menjalankan setiap gerbang di daftar, satu log per gerbang, dan tabel di akhir | `bash scripts/check/gates.sh` (`--only TEXT`, `--paths P…`, `--fix P…`, `--fail-fast`) | Satu perintah menjawab "sudah siap di-commit?" |
 | [.husky/pre-commit](.husky/pre-commit) | Menjalankan gerbang yang dibutuhkan file yang di-stage | Berjalan sendiri saat `git commit` setelah `bun install` menjalankan `prepare` | Gerbang merah tidak pernah jadi commit |
 | [quality-gate.sh](.github/scripts/quality-gate.sh) | Gerbang pull request: daftar di atas ditambah audit, pemindaian diff, pemindaian secret seluruh riwayat, pemindaian skill, dan build produksi | `bash .github/scripts/quality-gate.sh origin/dev` (`--strict` gagal bila ada cek yang tidak bisa jalan) | Lihat hasil CI sebelum Anda push |
-| [hook-probes.sh](scripts/check/hook-probes.sh) + [hook-probes.tsv](scripts/check/hook-probes.tsv) | Membuktikan setiap aturan hook dua arah: 402 perintah yang wajib ditolak, 196 yang wajib diloloskan, plus setiap mode gagal | `bash scripts/check/hook-probes.sh` (beberapa menit; `/bin/bash` membuktikan bash 3.2) | Guard yang diam-diam berhenti bekerja ketahuan |
+| [hook-probes.sh](scripts/check/hook-probes.sh) + [hook-probes.tsv](scripts/check/hook-probes.tsv) | Membuktikan setiap aturan hook dua arah: 540 perintah yang wajib ditolak, 268 yang wajib diloloskan, plus setiap mode gagal | `bash scripts/check/hook-probes.sh` (sekitar sembilan menit; `/bin/bash` membuktikan bash 3.2) | Guard yang diam-diam berhenti bekerja ketahuan |
 | [ai-config.sh](scripts/check/ai-config.sh) | Nomor aturan yang dirujuk memang ada, konteks yang selalu dimuat muat di 15.000 byte, wiring hook benar, server MCP dipin | `bash scripts/check/ai-config.sh` | `CLAUDE.md` tetap cukup pendek untuk dibaca; tidak ada rujukan aturan yang menggantung |
 | [unlock.sh](scripts/ops/unlock.sh) | Membuka `env` atau `db` selama beberapa menit, menunjukkan apa yang terbuka, atau mengunci semuanya | `! bun unlock env` (hanya Anda; lihat [Membuka kunci](#membuka-kunci-env-dan-db-produksi)) | Secret dan penulisan produksi hanya terbuka saat Anda bilang |
 | [show.sh](scripts/env/show.sh) · [set.sh](scripts/env/set.sh) | Menampilkan key sebuah file `.env*` dengan secret tersamar; mengubah satu nilai, dari stdin, saat `env` terbuka | `bash scripts/env/show.sh .env.production` | Agen bisa bekerja dengan file env tanpa melihat satu pun secret |
@@ -964,6 +964,7 @@ yang dinilai.
 | Pembacaan atau penulisan shell ke file `.env*` sungguhan | safety-check, sandbox, aturan deny `Read`/`Edit` | Secret akan masuk ke transkrip | `bash scripts/env/show.sh <file>`; `set.sh` setelah `! bun unlock env` | sandbox: `"sandbox": {"enabled": false}`; aturan hook: tidak ada |
 | Claude menjalankan unlock, atau menulis di `.claude/state/unlock/` | safety-check, sandbox | Hanya Anda yang membuka kunci | Anda menjalankan `! bun unlock env` | tidak ada |
 | Mengubah `scripts/env/` atau `unlock.sh` dari shell | safety-check; tool Edit bertanya dulu kepada Anda | Hook memercayakan file `.env*` kepada helper ini | Silakan baca dan salin; perubahannya Anda yang membuat | tidak ada |
+| Mengubah hook, `scripts/check/hook-probes.*`, atau pengaturan yang menyalakan guard dari shell | safety-check, sandbox; tool Edit bertanya dulu kepada Anda | Guard yang bisa ditulis ulang Claude tidak menjaga apa pun | Silakan baca, jalankan, dan salin keluar; ubah lewat tool Edit, atau jalankan sendiri perintahnya dengan `!` | tidak ada |
 | Penulisan SQL ke produksi | db-guard | Data produksi | `! bun unlock db`, atau jalankan pernyataannya sendiri | `dbWriteGuard.toolPattern`, atau hapus entrinya |
 | Edit manual ke client hasil generate atau spesifikasi OpenAPI | generated-guard | `generate:api` berikutnya akan menimpanya | Ubah sumbernya lalu jalankan `bun generate:api` | `"generatedPaths": []` |
 | Perintah yang tidak bisa ia pahami (`curl … \| bash`, `eval "$x"`) | safety-check | Ia tidak bisa tahu apa yang akan berjalan | Simpan kodenya ke file, baca, lalu jalankan file itu | tidak ada: jalankan sendiri dengan `!` |
@@ -981,14 +982,15 @@ penolakan menyebut jalan keluarnya: bila perintah itu memang dimaksud, Anda menj
 dengan `!` di depannya, yang menjalankannya sebagai Anda, dengan akses Anda sendiri, di luar hook
 dan (di sesi biasa) di luar sandbox. Tanpa python3, hanya beberapa aturan teks biasa yang berlaku
 (push terlindungi, penghapusan rekursif, hard reset, `clean` yang dipaksa, `--no-verify`, `HUSKY=0`,
-nama `.env*`, unlock, dan `scripts/env/`), dan Claude diberi tahu soal itu; selebihnya berjalan tanpa
-dicek, jadi pasanglah python3.
+nama `.env*`, unlock, `scripts/env/`, file yang menyalakan guard, dan skrip guard itu sendiri), dan
+Claude diberi tahu soal itu; selebihnya berjalan tanpa dicek, jadi pasanglah python3.
 
 **Sandbox di bawah hook, menyala secara default.** `.claude/settings.json` menyetel
 `sandbox.enabled` ke `true` untuk [sandbox Bash Claude Code](https://code.claude.com/docs/en/sandboxing),
 yang ditegakkan sistem operasi pada setiap perintah yang di-sandbox beserta proses turunannya: tidak
 boleh membaca file `.env*` atau backup-nya (template dikecualikan), dan tidak boleh menulis di
-`.claude/state/unlock/`. Hanya `show.sh` dan `set.sh` yang berjalan di luarnya.
+`.claude/state/unlock/` atau `.claude/hooks/` atau ke `scripts/ops/unlock.sh`. Hanya `show.sh` dan
+`set.sh` yang berjalan di luarnya.
 
 - **Platform**: macOS, atau Linux dan WSL2 dengan `bubblewrap` dan `socat`; bukan WSL1 atau
   Windows native. Bila sandbox tidak bisa dimulai, Claude Code memberi peringatan dan menjalankan
@@ -1013,8 +1015,12 @@ keamanan.
   jadi di dalam sandbox keduanya gagal sekali dan Claude Code menawarkan untuk menjalankannya lagi di
   luar sandbox, yang di mode default meminta persetujuan Anda dulu. Keluaran program itu sendiri
   tetap bisa menampilkan sebuah nilai.
-- **Hook adalah file di dalam repo.** Mengubahnya berarti mengubah apa yang ditolaknya; review
-  perubahan di `.claude/` seperti kode lainnya.
+- **Tool Edit bisa mengubah hook.** Shell tidak bisa, tetapi mengedit file adalah cara kode
+  berubah: `.claude/settings.json` bertanya dulu kepada Anda sebelum setiap edit pada hook, probe,
+  `unlock.sh`, atau `scripts/env/`; review perubahan di `.claude/` seperti kode lainnya.
+- **Kode inline yang menyembunyikan apa yang dipanggilnya sekaligus nama yang dijangkaunya**
+  (nama modul yang dieja sepotong-sepotong, dijalankan di luar folder yang dijaga) dinilai dari
+  teksnya dan bisa lolos. Sandbox dan review adalah lapisan di bawahnya.
 
 ## Membuka kunci `.env` dan DB produksi
 
@@ -1338,10 +1344,10 @@ men-strip.
   meloloskan pemanggilan. Jadi setiap guard menolak apa yang tidak bisa dicek (masukan rusak,
   python3 tidak ada, proses menggantung), dan setiap hook umpan balik diam saat gagal.
   [Tabel mode gagal](.claude/hooks/README.md#fail-modes) mencantumkan setiap kasus.
-- **Setiap aturan dibuktikan dua arah.** `scripts/check/hook-probes.sh` memberi safety-check 402
-  perintah yang wajib ditolak dan 196 yang wajib diloloskan
+- **Setiap aturan dibuktikan dua arah.** `scripts/check/hook-probes.sh` memberi safety-check 540
+  perintah yang wajib ditolak dan 268 yang wajib diloloskan
   ([`hook-probes.tsv`](scripts/check/hook-probes.tsv)), lalu membuktikan guard lainnya, setiap mode
-  gagal, dan git worktree yang ditautkan: 1.797 probe di salinan baru, semuanya lulus di
+  gagal, dan git worktree yang ditautkan: 2.288 probe di salinan baru, semuanya lulus di
   `/bin/bash` 3.2 milik macOS. Ia berjalan di pre-commit saat file hook di-stage, dan di setiap
   gerbang pull request. Audit dengan membaca tabelnya dan menjalankan skripnya.
 - **Berlapis, bukan satu tembok.** Hook membaca teks perintah; aturan `deny` di
@@ -1363,9 +1369,9 @@ men-strip.
 | Konteks yang selalu dimuat (`CLAUDE.md` + satu aturan tanpa path) | 12.789 byte (8.511 + 4.278); `ai-config.sh` gagal di atas 15.000 |
 | Deskripsi yang didaftarkan Claude Code untuk command, subagen, dan skill | 3.306 + 1.088 + 669 byte |
 | 15 aturan lainnya | total 45.080 byte, masing-masing dimuat hanya saat file yang cocok dibuka |
-| Satu hook, per pemanggilan | 53 sampai 118 ms, median dari 25 kali per hook: safety-check paling lambat, session-start, post-edit, dan post-commit paling cepat (Apple M5, `/bin/bash` 3.2, python3 3.14, load average sekitar 5; post-edit sebelum formatter dan linter Anda berjalan) |
+| Satu hook, per pemanggilan | 53 sampai 138 ms, median dari 25 kali per hook: safety-check paling lambat (118 ms sebelum aturan skrip guard, yang menambah sekitar 17%; versi lama dan baru dijalankan berdampingan), session-start, post-edit, dan post-commit paling cepat (Apple M5, `/bin/bash` 3.2, python3 3.14, load average sekitar 5; post-edit sebelum formatter dan linter Anda berjalan) |
 | `post-edit` dengan formatter dan linter Anda | waktu tool itu sendiri, sampai batas timeout 60 detik |
-| Probe hook | beberapa menit, hanya saat file hook di-stage |
+| Probe hook | sekitar sembilan menit (563 detik), hanya saat file hook di-stage |
 | CI | hanya di pull request: tidak ada saat push, tidak ada sesuai jadwal |
 
 ## Upgrade, rollback, uninstall

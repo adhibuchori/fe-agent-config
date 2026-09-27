@@ -323,8 +323,9 @@ script.
 It **fails closed**. Only exit 2 blocks (§2), so a guard that crashes, or runs past its timeout,
 would let the call through; instead, a payload it cannot parse, an analyzer crash or an analysis
 over 8 s is refused. Without python3 a few plain-text rules stand in (protected pushes, recursive
-deletes, a hard reset, a forced `clean`, `--no-verify`, `HUSKY=0`, `.env*` names, the unlock), and
-Claude is told so; everything else runs unchecked on that machine.
+deletes, a hard reset, a forced `clean`, `--no-verify`, `HUSKY=0`, `.env*` names, the unlock,
+`scripts/env/`, the files that turn the guards on and the guard scripts), and Claude is told so;
+everything else runs unchecked on that machine.
 
 The same holds for a command it can parse but cannot resolve. `eval` of built text, a decoded
 payload, a script piped into a shell, a command substitution used as a command name or a file
@@ -352,11 +353,12 @@ runs, so a file the agent writes and then runs is executed unread, and a program
 of its own (`watch`, `flock`, `parallel`) is judged by name only. That is why
 `.claude/settings.json` also turns on Claude Code's Bash sandbox by default, which the operating
 system enforces on every sandboxed process: no reads of `.env*` files or the backups, no writes
-under `.claude/state/unlock/`. The hooks are the guardrail; the sandbox is the boundary below it
-where the platform supports it (macOS, or Linux and WSL2 with `bubblewrap` and `socat`; where it
-cannot start, Claude Code warns and runs without it unless `sandbox.failIfUnavailable` is set, and
-the hooks still apply). `"sandbox": {"enabled": false}` turns it off and leaves the hooks running.
-`docs/unlock.md` lists what the two still do not stop.
+under `.claude/state/unlock/` or `.claude/hooks/` or to `scripts/ops/unlock.sh`. The hooks are the
+guardrail; the sandbox is the boundary below it where the platform supports it (macOS, or Linux and
+WSL2 with `bubblewrap` and `socat`; where it cannot start, Claude Code warns and runs without it
+unless `sandbox.failIfUnavailable` is set, and the hooks still apply).
+`"sandbox": {"enabled": false}` turns it off and leaves the hooks running. `docs/unlock.md` lists
+what the two still do not stop.
 
 ---
 
@@ -491,8 +493,9 @@ What replaced it:
 
 The hooks are a guardrail against slips and injected instructions (§15). Under them,
 `.claude/settings.json` turns on Claude Code's Bash sandbox, which denies every sandboxed write
-under `.claude/state/unlock/` and every sandboxed read of a `.env*` file, whatever route the
-command took; `docs/unlock.md` says what the two layers still do not stop.
+under `.claude/state/unlock/` or `.claude/hooks/` or to `scripts/ops/unlock.sh`, and every sandboxed
+read of a `.env*` file, whatever route the command took; `docs/unlock.md` says what the two layers
+still do not stop.
 
 ---
 

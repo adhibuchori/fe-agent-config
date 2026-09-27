@@ -272,8 +272,11 @@ executable bits, then prove the hooks on your own machine:
 
 ```bash
 chmod +x .claude/hooks/*.sh scripts/ops/unlock.sh scripts/env/*.sh scripts/check/hook-probes.sh
-bash scripts/check/hook-probes.sh   # every rule, both ways, in temp folders; a few minutes
+bash scripts/check/hook-probes.sh   # every rule, both ways, in temp folders; about nine minutes
 ```
+
+Run the `chmod` line yourself (in your terminal, or with `!`): once the hooks are wired they refuse
+it from Claude, because it changes a guard script.
 
 On macOS, `/bin/bash scripts/check/hook-probes.sh` proves the hooks under bash 3.2.
 
@@ -353,30 +356,37 @@ lists, plus your `commandWrappers`) and package runners (`npx`, `bunx`, `pnpx`, 
 script. It refuses by category: git that loses work or skips the pre-commit gate, pushes to or
 deletion of a protected branch, git settings that change what git runs, loads or connects to
 (aliases, includes, command-carrying keys such as `core.sshCommand`, proxies, `url.*.insteadOf`,
-`safe.directory`, and more) whatever their value, any shell access to a real `.env*` file, and the
-unlock from the agent. README § What gets blocked has each list.
+`safe.directory`, and more) whatever their value, any shell access to a real `.env*` file, the
+unlock from the agent, and any shell change to the guards themselves (the hooks, the probes,
+`unlock.sh`, `scripts/env/` and the settings that turn the guards on). README § What gets blocked
+has each list.
 
 It fails closed. A payload that is not JSON, an analyzer crash or an analysis past 8 s is refused,
 and so is a command it cannot resolve, whether or not it names a `.env*` file or the unlock: `eval`
-of built text, a decoded payload, a script piped into a shell or interpreter, a command
-substitution used as a command name or a file operand, a path built through `IFS`, an array or
-`printf`, a package runner whose command or shell text is built from `$( )` or an unknown
-variable, a pager or editor command it cannot read, inline code that opens a file, and a copy or
-archive that lands on `.claude/state/` or a `.env*` file. The refusal says why, and ends with the
-way through: if you meant the command, run it yourself with `!` in front, which runs it as you,
-with your own access, outside the hooks and (in an ordinary session) outside the sandbox. Never
-widen `.claude/settings.json` or `.claude/agent-config.json` to get past one.
+of built text, a decoded payload, a script piped into a shell or interpreter, a command substitution
+used as a command name or a file operand, a path built through `IFS`, an array or `printf`, a
+package runner whose command or shell text is built from `$( )` or an unknown variable, a pager or
+editor command it cannot read, inline code that opens or changes a file or runs a command, a `sed`
+or `awk` program whose file or command is built at run time, paths handed to a command that changes
+files by `xargs` or `$( )`, and a copy or archive that lands on `.claude/state/` or a `.env*` file.
+The refusal says why, and ends with the way through: if you meant the command, run it yourself with
+`!` in front, which runs it as you, with your own access, outside the hooks and (in an ordinary
+session) outside the sandbox. Never widen `.claude/settings.json` or `.claude/agent-config.json` to
+get past one.
 
 Without python3, only plain-text rules stand in: pushes to protected branches, recursive deletes of
 protected paths, a hard reset, a forced `clean`, `--no-verify`, `HUSKY=0`, any real `.env*` name,
-the unlock script, its alias or its folder, and any mention of `scripts/env/`. Everything else runs
-unchecked on such a machine, so install python3 (§0).
+the unlock script, its alias or its folder, any mention of `scripts/env/`, of a file that turns the
+guards on, or of a guard script (`.claude/hooks/`, `hook-probes`). Everything else runs unchecked on
+such a machine, so install python3 (§0).
 
 What the hooks do not catch, since they read the command line and not the files it runs: a script,
 test, build config or git hook the agent writes and then runs; a program that runs commands of its
 own and is not a known wrapper (`watch`, `script`, `flock`, `parallel`), judged by name only; the
-app reading `.env*` when it runs; and a change to the hooks themselves, which are files in the
-repo. The sandbox below covers the two that matter most, reading `.env*` and forging an unlock.
+app reading `.env*` when it runs; and an edit to the hooks through the Edit tool, which
+`.claude/settings.json` asks you about first (the shell cannot change them). The sandbox below
+covers the two that matter most, reading `.env*` and forging an unlock, and keeps sandboxed
+commands out of the hooks and the unlock script as well.
 
 ### The Bash sandbox
 
@@ -385,8 +395,9 @@ for Bash by default (`"sandbox": {"enabled": true}`). The operating system then 
 sandboxed command and its children, what the hooks can only read as text: `denyRead` keeps them off
 every `.env*` file (`.envrc`, `.env-*` and `.env_*` included, at any depth) and the backups in
 `.claude/state/env-backups/`, with `allowRead` reopening the `*.example` templates; `denyWrite`
-keeps them out of `.claude/state/unlock/`; and `excludedCommands` leaves only `scripts/env/show.sh`
-and `scripts/env/set.sh` outside, the two helpers that must reach `.env*` files.
+keeps them out of `.claude/state/unlock/`, `.claude/hooks/` and `scripts/ops/unlock.sh`; and
+`excludedCommands` leaves only `scripts/env/show.sh` and `scripts/env/set.sh` outside, the two
+helpers that must reach `.env*` files.
 
 - **Platforms.** macOS needs nothing; Linux and WSL2 need `bubblewrap` and `socat` (§0). WSL1 and
   native Windows are not supported. Where the sandbox cannot start, Claude Code warns and runs
@@ -470,7 +481,7 @@ pre-commit hook still reaches `test:coverage`) and `@format` (which reads the sc
 `envfile.py` with `.env*` files, so the agent's shell may read them but never change, replace, move
 or delete them, and `.claude/settings.json` asks you before any edit under `scripts/env/`. Running
 another script from that folder is allowed, but every file there also counts as a hooks file, so
-staging one runs the three-minute hook probes. That is why the environment preflight the `dev`,
+staging one runs the nine-minute hook probes. That is why the environment preflight the `dev`,
 `build` and `start` scripts run lives in `scripts/next/`.
 
 **Three optional modules** ship with a check each: `check:dialog-desc`, `check:responsive` and

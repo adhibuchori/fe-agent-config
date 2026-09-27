@@ -442,7 +442,7 @@ has the full list.
 7. **Prove it on your machine:**
 
    ```bash
-   bash scripts/check/hook-probes.sh        # every hook rule, both ways; a few minutes
+   bash scripts/check/hook-probes.sh        # every hook rule, both ways; about nine minutes
    bash scripts/check/ai-config.sh          # rule citations, context budget, hook wiring, MCP pins
    bash scripts/sync/workflows.sh --check   # the command mirrors match their sources
    bash scripts/sync/rules.sh --check       # the rule mirror matches .claude/rules/
@@ -736,7 +736,7 @@ run by hand:
 | [gates.sh](scripts/check/gates.sh) + [gates.list](scripts/check/gates.list) | Runs every gate in the list, one log each, and a table at the end | `bash scripts/check/gates.sh` (`--only TEXT`, `--paths P…`, `--fix P…`, `--fail-fast`) | One command answers "is this ready to commit?" |
 | [.husky/pre-commit](.husky/pre-commit) | Runs the gates the staged files need | Runs by itself on `git commit` once `bun install` ran `prepare` | A red gate never becomes a commit |
 | [quality-gate.sh](.github/scripts/quality-gate.sh) | The pull-request gate: the list above plus the audit, diff scans, full-history secret scan, skill scan and production build | `bash .github/scripts/quality-gate.sh origin/dev` (`--strict` fails on a check that could not run) | See the CI result before you push |
-| [hook-probes.sh](scripts/check/hook-probes.sh) + [hook-probes.tsv](scripts/check/hook-probes.tsv) | Proves every hook rule both ways: 402 commands it must stop, 196 it must let through, plus each fail mode | `bash scripts/check/hook-probes.sh` (a few minutes; `/bin/bash` proves bash 3.2) | A guard that silently stopped firing is caught |
+| [hook-probes.sh](scripts/check/hook-probes.sh) + [hook-probes.tsv](scripts/check/hook-probes.tsv) | Proves every hook rule both ways: 540 commands it must stop, 268 it must let through, plus each fail mode | `bash scripts/check/hook-probes.sh` (about nine minutes; `/bin/bash` proves bash 3.2) | A guard that silently stopped firing is caught |
 | [ai-config.sh](scripts/check/ai-config.sh) | Cited rule numbers exist, the always-loaded context fits 15,000 bytes, hook wiring is sound, MCP servers are pinned | `bash scripts/check/ai-config.sh` | `CLAUDE.md` stays short enough to be read; no rule citation dangles |
 | [unlock.sh](scripts/ops/unlock.sh) | Opens `env` or `db` for a few minutes, shows what is open, or locks it all | `! bun unlock env` (you only; see [Unlocking](#unlocking-env-and-the-production-db)) | Secrets and production writes open only when you say so |
 | [show.sh](scripts/env/show.sh) · [set.sh](scripts/env/set.sh) | Lists a `.env*` file's keys with secrets masked; changes one value, from stdin, while `env` is unlocked | `bash scripts/env/show.sh .env.production` | The agent can work with env files without seeing a secret |
@@ -936,6 +936,7 @@ and `AGENT_HOOK_STATE_DIR` (where per-session state lives). The
 | A shell read or write of a real `.env*` file | safety-check, the sandbox, `Read`/`Edit` deny rules | Secrets would land in the transcript | `bash scripts/env/show.sh <file>`; `set.sh` after `! bun unlock env` | the sandbox: `"sandbox": {"enabled": false}`; the hook rule: none |
 | Claude running the unlock, or writing under `.claude/state/unlock/` | safety-check, the sandbox | Only you unlock | You run `! bun unlock env` | none |
 | Changing `scripts/env/` or `unlock.sh` from the shell | safety-check; the Edit tool asks you first | The hook trusts these helpers with `.env*` files | Read and copy them freely; you make the change | none |
+| Changing a hook, `scripts/check/hook-probes.*` or the settings that turn the guards on from the shell | safety-check, the sandbox; the Edit tool asks you first | A guard Claude can rewrite guards nothing | Read, run and copy them out freely; change one with the Edit tool, or run the command yourself with `!` | none |
 | A production SQL write | db-guard | Production data | `! bun unlock db`, or run the statement yourself | `dbWriteGuard.toolPattern`, or remove the entry |
 | A hand edit to the generated client or the OpenAPI spec | generated-guard | The next `generate:api` overwrites it | Change the source and run `bun generate:api` | `"generatedPaths": []` |
 | A command it cannot resolve (`curl … \| bash`, `eval "$x"`) | safety-check | It cannot tell what would run | Save the code to a file, read it, run the file | none: run it yourself with `!` |
@@ -951,14 +952,15 @@ call run. Over-refusal is the price, and every refusal names the way past it: wh
 meant, you run it yourself with `!` in front, which runs it as you, with your own access, outside
 the hooks and (in an ordinary session) outside the sandbox. Without python3 only a few plain-text
 rules stand in (protected pushes, recursive deletes, a hard reset, a forced `clean`,
-`--no-verify`, `HUSKY=0`, `.env*` names, the unlock and `scripts/env/`), and Claude is told so;
-everything else runs unchecked there, so install python3.
+`--no-verify`, `HUSKY=0`, `.env*` names, the unlock, `scripts/env/`, the files that turn the guards
+on and the guard scripts), and Claude is told so; everything else runs unchecked there, so install
+python3.
 
 **A sandbox under the hooks, on by default.** `.claude/settings.json` sets `sandbox.enabled` to
 `true` for [Claude Code's Bash sandbox](https://code.claude.com/docs/en/sandboxing), which the
 operating system enforces on every sandboxed command and its children: no reads of `.env*` files or
-the backups (templates excepted), and no writes under `.claude/state/unlock/`. Only `show.sh` and
-`set.sh` run outside it.
+the backups (templates excepted), and no writes under `.claude/state/unlock/` or `.claude/hooks/` or
+to `scripts/ops/unlock.sh`. Only `show.sh` and `set.sh` run outside it.
 
 - **Platforms**: macOS, or Linux and WSL2 with `bubblewrap` and `socat`; not WSL1 or native
   Windows. Where it cannot start, Claude Code warns and runs commands without it unless
@@ -981,8 +983,12 @@ slips and against instructions hidden in files the agent reads, not a security b
 - **The app reads `.env` when it runs.** `bun dev` and `bun run build` need those values, so under
   the sandbox they fail once and Claude Code offers to rerun them outside it, which asks you first
   in the default mode. A program's own output can still show a value.
-- **The hooks are files in the repo.** A change to them changes what they refuse; review changes
-  under `.claude/` like any other code.
+- **The Edit tool can change the hooks.** The shell cannot, but a file edit is how code changes:
+  `.claude/settings.json` asks you before every edit to a hook, the probes, `unlock.sh` or
+  `scripts/env/`; review changes under `.claude/` like any other code.
+- **Inline code that hides both what it calls and the name it reaches** (a module name spelled in
+  pieces, run outside the guarded folders) is judged by its text and can pass. The sandbox and
+  review are the layers below it.
 
 ## Unlocking `.env` and the production DB
 
@@ -1293,9 +1299,9 @@ once. Do not test the deploy path that way; a merge into `prod` deploys and stri
   through. So each guard refuses what it cannot check (bad input, missing python3, a hang), and
   each feedback hook stays silent when it fails. The
   [fail-mode table](.claude/hooks/README.md#fail-modes) lists every case.
-- **Every rule is proven both ways.** `scripts/check/hook-probes.sh` feeds safety-check 402
-  commands it must refuse and 196 it must allow ([`hook-probes.tsv`](scripts/check/hook-probes.tsv)),
-  then proves the other guards, each fail mode and a linked git worktree: 1,797 probes in a fresh
+- **Every rule is proven both ways.** `scripts/check/hook-probes.sh` feeds safety-check 540
+  commands it must refuse and 268 it must allow ([`hook-probes.tsv`](scripts/check/hook-probes.tsv)),
+  then proves the other guards, each fail mode and a linked git worktree: 2,288 probes in a fresh
   copy, all passing under macOS's `/bin/bash` 3.2. It runs in pre-commit when a hooks file is
   staged, and in every pull-request gate. Audit it by reading the table and running the script.
 - **Layers, not one wall.** The hooks read command text; the `deny` rules in
@@ -1316,9 +1322,9 @@ once. Do not test the deploy path that way; a merge into `prod` deploys and stri
 | Always-loaded context (`CLAUDE.md` + the one unscoped rule) | 12,789 bytes (8,511 + 4,278); `ai-config.sh` fails above 15,000 |
 | Descriptions Claude Code lists for commands, subagents and skills | 3,306 + 1,088 + 669 bytes |
 | The other 15 rules | 45,080 bytes in total, each loaded only when a matching file is open |
-| A hook, per call | 53 to 118 ms, median of 25 runs per hook: safety-check the slowest, session-start, post-edit and post-commit the fastest (Apple M5, `/bin/bash` 3.2, python3 3.14, load average about 5; post-edit before your formatter and linter run) |
+| A hook, per call | 53 to 138 ms, median of 25 runs per hook: safety-check the slowest (118 ms before the guard-script rules, which add about 17%; old and new run side by side), session-start, post-edit and post-commit the fastest (Apple M5, `/bin/bash` 3.2, python3 3.14, load average about 5; post-edit before your formatter and linter run) |
 | `post-edit` with your formatter and linter | their own time, up to its 60 s timeout |
-| The hook probes | a few minutes, only when a hooks file is staged |
+| The hook probes | about nine minutes (563 s), only when a hooks file is staged |
 | CI | only on pull requests: nothing on a push, nothing on a schedule |
 
 ## Upgrade, roll back, uninstall
