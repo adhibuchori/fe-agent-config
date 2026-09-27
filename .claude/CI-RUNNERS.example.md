@@ -2,8 +2,7 @@
 
 > **List it in the CLAUDE.md "On-demand References" table; never `@`-import it.** An import loads
 > the whole file into every session. This is a template: copy it to `.claude/CI-RUNNERS.md` and
-> fill every `<placeholder>`. `/promote-deploy` below is this template's command; installed from the
-> agent-config-kit plugins it is `/agent-deploy:promote-deploy`.
+> fill every `<placeholder>`.
 
 Every `runs-on:` resolves through repository variables, so no runner label is ever hard-coded and
 moving a pool is a variable change, not a commit. Workflows run on pull request events only, with no
@@ -33,17 +32,45 @@ Set them with `gh variable set CI_RUNNER_FAST --body <label>`; remove one with
 
 ## Which jobs are marked fast
 
-| Pool                   | Jobs in this repo                                    | Why                                    |
-| ---------------------- | ---------------------------------------------------- | -------------------------------------- |
-| `CI_RUNNER_FAST` first | `<the pull-request quality gate>`, `<preview build>` | a person is waiting on the result      |
-| `CI_RUNNER`            | `<bots, advisory checks, post-merge jobs>`           | nobody waits; sub-minute on any runner |
+This template's workflows already follow this split; a reusable workflow's `runs-on` input
+overrides it for one caller.
+
+| Pool                   | Workflows this template ships                                   | Why                                           |
+| ---------------------- | --------------------------------------------------------------- | --------------------------------------------- |
+| `CI_RUNNER_FAST` first | `quality-gate`                                                  | the merge-blocking gate; a person waits on it |
+| `CI_RUNNER`            | `codeql`, `dependency-review`, `workflows-lint`, `react-doctor` | advisory; sub-minute anywhere                 |
+| `CI_RUNNER`            | `deepseek-review`                                               | advisory and network-bound                    |
+| `CI_RUNNER`            | `ci-cd` (deploy), `strip-ai-on-pr`                              | post-merge; nobody waits on it                |
+| Yours                  | `<preview build>`, `<anything else in this repo>`               | `<who waits on it>`                           |
 
 ## The allocation rule
 
 GitHub-hosted runners round each job up to a whole minute, and many third-party runners bill the
 same way; check your provider's rule. A job that takes 22 seconds and one that takes 44 cost the
 same minute, so a faster runner saves nothing on a sub-minute job: it pays only above the one-minute
-floor. Place a job by **who waits for its result**, not by how heavy it looks.
+floor. Place a job by **who waits for its result**, not by how heavy it looks: the fast pool holds
+the job that blocks the merge, the one that must not die or stall, and every job that can fail
+without blocking anyone runs where minutes are cheapest.
+
+## Spending two free pools (example: Blacksmith)
+
+Quotas at the time of writing; check [GitHub's billing page](https://docs.github.com/billing/managing-billing-for-github-actions/about-billing-for-github-actions)
+and your provider's pricing before you rely on them.
+
+| Repository | GitHub-hosted standard runners                  | A third-party pool such as Blacksmith                     |
+| ---------- | ----------------------------------------------- | --------------------------------------------------------- |
+| Public     | free, no minute limit                           | not needed for minutes; only if you want the gate faster |
+| Private    | 2,000 minutes a month on the Free plan          | its own free minutes (Blacksmith: 3,000 a month), then paid |
+
+For a private repository, use both free pools:
+
+1. Put the merge-blocking gate on the fast pool. Install the provider's GitHub app first, then set
+   its label, for example `gh variable set CI_RUNNER_FAST --body blacksmith-2vcpu-ubuntu-2404`.
+2. Leave `CI_RUNNER` unset, so the advisory, bot and post-merge jobs spend GitHub's free minutes.
+3. When GitHub's minutes run out for the month, set `CI_RUNNER` to the same label and every job
+   moves to the fast pool; delete it again when the month resets.
+
+For a public repository, leave both unset: every job is free on GitHub.
 
 ## Before moving jobs onto a pool — test the budget
 
@@ -51,21 +78,22 @@ An organisation budget set to stop usage at its limit may block all Actions or o
 above the free tier, and the settings page does not say which. Test with a throwaway workflow, not
 with the variables; while `CI_RUNNER` is set, nothing lands on `ubuntu-latest` to be observed:
 
-1. Add a `workflow_dispatch` workflow with `runs-on: ubuntu-latest` written literally and a single
-   `echo ok` step. Run it.
+1. Open a throwaway pull request that adds a `pull_request` workflow with `runs-on: ubuntu-latest`
+   written literally and a single `echo ok` step. This template's CI starts only from pull requests, so
+   opening it is what runs it.
 2. Green means the pool is reachable. A job that dies in about three seconds with no log means the
-   budget blocks it; the reason is in the check-run annotation, not the run log. Delete the file
-   either way.
+   budget blocks it; the reason is in the check-run annotation, not the run log. Close the pull
+   request unmerged either way.
 3. Only if green, change the variables.
 
 ## Escape hatches
 
-| Situation                             | Action                                                    |
-| ------------------------------------- | --------------------------------------------------------- |
-| Third-party pool gone, split **off**  | `gh variable delete CI_RUNNER` → everything on GitHub     |
-| Third-party pool gone, split **on**   | delete whichever variable holds the third-party label     |
-| GitHub-hosted pool gone, split **on** | `gh variable set CI_RUNNER --body <third-party-label>`    |
-| Both pools gone                       | `/promote-deploy`: local gates, direct deploy, no minutes |
+| Situation                             | Action                                                                 |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| Third-party pool gone, split **off**  | `gh variable delete CI_RUNNER` → everything on GitHub                  |
+| Third-party pool gone, split **on**   | delete whichever variable holds the third-party label                  |
+| GitHub-hosted pool gone, split **on** | `gh variable set CI_RUNNER --body <third-party-label>`                 |
+| Both pools gone                       | `/promote-deploy`: local gates, direct deploy, no minutes              |
 
 The variable holding the unavailable pool's label is the one to remove.
 

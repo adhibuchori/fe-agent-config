@@ -149,10 +149,10 @@ the API. Keep that property if you edit it; it is what makes the comment path sa
 
 Two smaller decisions in the same workflow, both deliberate:
 
-- **No `synchronize` in the trigger types.** The action posts no sticky comment, so every push
-  would add another review.
+- **No `synchronize` in the trigger types.** Each review costs tokens; the comment is updated in
+  place, and `/ask-deepseek` asks again after new commits.
 - **Base branch only, not the promotion branch.** A `dev → prod` diff re-adds the entire AI config
-  that the strip pipeline removed, and the provider rejects a diff that size.
+  that the strip pipeline removed, and repeats what was reviewed on the way into `dev`.
 
 ---
 
@@ -421,8 +421,9 @@ when you want it. The strip's back-merge into `dev` is a merge for the same reas
 ## 19. The deploy is a webhook, and names no vendor
 
 `ci-cd.yaml` builds nothing. When a pull request into `prod` is merged, it posts to the
-`DEPLOY_WEBHOOK_URL` secret through `.github/scripts/trigger-deploy.sh`, retrying while a build
-still refuses connections, and the deployment platform builds from git.
+`DEPLOY_WEBHOOK_URL` secret through agent-config-kit's reusable deploy-webhook workflow, retrying
+while a build still refuses connections, and the deployment platform builds from git.
+`/promote-deploy` does the same by hand with `.github/scripts/trigger-deploy.sh`.
 
 - **Every platform has a deploy hook**; not every platform wants a registry image. A build-and-push
   job assumes one deployment model and costs minutes and storage on every promotion.

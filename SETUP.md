@@ -78,7 +78,7 @@ It skips the hooks, anti-patterns and skills, whose angle brackets are syntax an
 generated command mirror. It still prints command syntax (`<file>`, `<paths>`, `<sha>`), TypeScript
 generics and HTML tags in the rules and checklists (`<html lang>`, `<dialog>`); leave those. Two
 placeholders sit outside that search, in `.github/`: `@your-github-handle` in `CODEOWNERS`, and
-`DOCS_REPO: <github-org>/<docs-repo>` in `ci-cd.yaml`, needed only for the docs changelog
+`docs-repository: ''` in `ci-cd.yaml` (`<github-org>/<docs-repo>`), needed only for the docs changelog
 ([README § GitHub repository configuration](README.md#step-4-cross-repository-token-optional)).
 
 | File                                                 | What to replace                                                                                                                                                                 |
@@ -251,21 +251,23 @@ excludes.
 
 ### AI code review on pull requests: DeepSeek
 
-`.github/workflows/deepseek-review.yml` posts an AI review comment on pull requests into `dev`,
-using [`hustcer/deepseek-review`](https://github.com/hustcer/deepseek-review), which accepts any
-OpenAI-compatible endpoint, so the provider is your choice despite the name. Add a
-`DEEPSEEK_CODE_REVIEW_TOKEN` secret and it runs. Its `sys-prompt` describes this stack and lists the
+`.github/workflows/deepseek-review.yml` posts a DeepSeek review of each pull request into `dev` as
+one comment, updated on later runs, through agent-config-kit's reusable `deepseek-review` workflow,
+pinned to one commit. Add a `DEEPSEEK_API_KEY` secret and it runs; without it the job passes and
+sends nothing. The diff is capped at 100 KB and the answer at 16,384 tokens, so a review costs a cent
+or two, at most about ten US cents. Its `instructions` describe this stack and list the
 rules the gate cannot check; edit it when yours differs. Three things to keep if you edit the
 workflow:
 
 - **Never add `actions/checkout`, and never switch to `pull_request_target`.** The workflow runs on
   `pull_request` (a branch of this repo gets the secret; a fork's run is skipped) and on
   `issue_comment` for `/ask-deepseek`, which runs from the default branch with the secret in scope.
-  That path is safe only because nothing checks out or runs the pull request's code.
+  That path is safe only because nothing checks out or runs the pull request's code, and the
+  reusable workflow skips a fork's pull request on every event.
 - **`dev` only, and no `synchronize`.** A `dev → prod` diff re-adds the whole AI layer the strip
-  removed and exceeds the provider's diff limit. Without `synchronize`, a push does not stack
-  another review; comment `/ask-deepseek` to re-run it.
-- **Tell it only what the gate checks on the same pull request.** The prompt says which checks
+  removed. Each review costs tokens, so a push does not start one; comment `/ask-deepseek` to re-run
+  it, and the one comment is updated.
+- **Tell it only what the gate checks on the same pull request.** The instructions say which checks
   already ran, so the review spends its budget on judgement; keep that list true.
 
 ---
@@ -461,9 +463,14 @@ names, so add them to your `package.json`:
     "check:tailwind": "bun run scripts/check/tailwind-classes.ts",
     "check:error-codes": "bun run scripts/check/error-codes.ts",
     "check:error-catch": "bun run scripts/check/error-catch.ts",
+    "check:dockerfile": "bun run scripts/check/dockerfile.ts",
     "check:dialog-desc": "bun run scripts/check/dialog-desc.ts",
     "check:responsive": "bun run scripts/check/responsive.ts",
     "check:skeleton-switch": "bash scripts/check/skeleton-switch.sh",
+    "check:skeleton-pairs": "bun run scripts/check/skeleton-pairs.ts",
+    "check:endpoints": "bun run scripts/check/endpoints.ts",
+    "check:crypto-interop": "bun run scripts/check/crypto-interop.ts",
+    "generate:endpoints": "bun run scripts/generate/endpoints.ts",
     "measure:waterfall": "bun run scripts/measure/waterfall.ts",
     "ops:pr-ready": "bash scripts/ops/pr-ready.sh",
     "unlock": "bash scripts/ops/unlock.sh",
@@ -489,12 +496,15 @@ another script from that folder is allowed, but every file there also counts as 
 staging one runs the nine-minute hook probes. That is why the environment preflight the `dev`,
 `build` and `start` scripts run lives in `scripts/next/`.
 
-**Three optional modules** ship with a check each: `check:dialog-desc`, `check:responsive` and
-`check:skeleton-switch`. Adopt one with its rule, or delete the rule, its standard under
-`.claude/docs/standards/`, its script and its `gates.list` line together (the skeleton module also
-takes the `skeleton` skill). The pull-request gate runs a module exactly when `gates.list` lists
-it. `measure:waterfall` is the optional measurer that `.claude/rules/web/data-fetching.md` W7
-names; delete it with its package script if you measure in the browser instead.
+**Four optional modules** ship with their checks: `check:dialog-desc`, `check:responsive`, the
+skeleton module (`check:skeleton-switch` and `check:skeleton-pairs`) and the payload contract
+(`check:endpoints`, `check:crypto-interop` and `generate:endpoints`, described in
+`.claude/PAYLOAD-CONTRACT.md`). Adopt one with its rule, or delete the rule, its standard under
+`.claude/docs/standards/`, its scripts and its `gates.list` lines together (the skeleton module also
+takes the `skeleton` skill; the payload contract's last section lists its files). The pull-request
+gate runs a module exactly when `gates.list` lists it. `measure:waterfall` is the optional measurer
+that `.claude/rules/web/data-fetching.md` W7 names; delete it with its package script if you measure
+in the browser instead.
 
 **`vitest.config.ts`.** `coverage-policy.mjs` refuses to pass until the coverage block asks for
 100% on the logic layer and every exclusion carries its reason:
@@ -742,6 +752,10 @@ subagents and MCP config exist on `dev` and are removed on the way to `prod`.
 | `strip-ai.sh`        | Removes those paths on the production branch                                    |
 | `verify-strip.sh`    | Asserts they are gone from `prod` **and still present on `dev`**                |
 | `back-merge-prod.sh` | Merges `prod` back into `dev` so the branches do not diverge                    |
+
+In CI, `strip-ai-on-pr.yml` runs agent-config-kit's reusable strip workflow instead of these
+scripts: its default list plus `promote-deploy-logs` is exactly `STRIP_PATHS`, and its checkout
+keeps no token. `/promote-deploy` runs the scripts by hand. Change both lists together.
 
 The list removes what configures an agent: `.claude/`, `.agent/`, `.agents/`, `_workflow-source/`,
 `CLAUDE.md`, `AGENTS.md`, `SSOT.md`, `.mcp.json`, `.skillspector-baseline.yaml` and the other agent

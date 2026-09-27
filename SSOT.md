@@ -249,6 +249,20 @@ Rules:
 - Query key factory in `src/lib/api/query/query-keys.ts` must exist before writing service hooks
 - Always expose `{ data, isLoading, isError, error }`
 - `staleTime`/`gcTime` set globally in `providers.tsx` — per-query overrides require a comment
+- **Read the body the mutator returns, not a field of the generated type.** A generated client may
+  type a call as `{ status, data, headers }` while the custom mutator resolves to the body itself:
+  `.data` then type-checks and is `undefined` every time, a list that renders empty forever. Unwrap
+  in one helper.
+- **A wire type never leaves the hook.** Map it onto a view model in `src/types/` through a mapper
+  in `src/lib/<domain>/`, field by field rather than by spread, so a field the backend adds stops at
+  the mapper.
+- **An empty result falls back to a module-level constant**, never a fresh `[]`: a new array per
+  render is a new identity, and tables reset their state on one.
+- **A blank filter is left out of the request**, not sent as an empty string the backend reads as a
+  value.
+- **A mutation invalidates the smallest query root that is still honest**, and a test pins the
+  narrow ones.
+- The mutator throws on a non-2xx status, so whatever resolves in a `queryFn` is a success body.
 
 ### 5.3 Data Flow Rule
 
@@ -257,6 +271,27 @@ Component → service hook (src/hooks/api/) → generated hook (src/lib/api/gene
 ```
 
 Components must not import from `src/lib/api/generated/` directly.
+
+### 5.4 Fixtures Before the Backend
+
+A screen is wired to its endpoint or not built yet. Fixture data lives under `src/testing/fixtures/`
+(what the request mocks answer and component tests assert against), never under `src/lib/`, where
+a screen could import it and the coverage gate would have to exempt it by name. A missing endpoint
+shows an honest empty panel; an invented measurement is read as a measurement.
+
+### 5.5 Every Screen Has Three States
+
+Loading, empty and error each have one home:
+
+| State   | Inside a mounted screen                                   | Before the screen mounts  |
+| ------- | --------------------------------------------------------- | ------------------------- |
+| Loading | the table's loading prop, a skeleton                      | the route's `loading.tsx` |
+| Empty   | the empty-state component                                 | —                         |
+| Error   | the error state with a retry, or a rethrow to `error.tsx` | —                         |
+
+A route's `loading.tsx` belongs to one page; on a segment with children it stands in for all of
+them. A placeholder repeats the real component's box (`.claude/rules/web/skeletons.md`). The empty
+and error component is never a loading state, and never "coming soon" on a surface that has data.
 
 ---
 
@@ -302,7 +337,7 @@ Every workflow starts from a pull-request event; nothing runs on a push or a sch
 | Trigger                        | Workflow                               | What it does                                                                                                                                                              |
 | ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | PR → `dev` or `prod`           | `quality-gate.yaml`                    | Runs `.github/scripts/quality-gate.sh` — the `gates.list` checks, the audit, the diff and secret scans, tests, production build. `CI=true` makes an unrunnable check fail |
-| PR → `dev`, or `/ask-deepseek` | `deepseek-review.yml`                  | AI review comment. `dev` only — a `dev → prod` diff re-adds the stripped AI config and exceeds GitHub's diff limit                                                        |
+| PR → `dev`, or `/ask-deepseek` | `deepseek-review.yml`                  | One AI review comment, updated. `dev` only — a `dev → prod` diff re-adds the stripped AI config                                                                           |
 | PR → `dev` or `prod`           | `react-doctor.yml`                     | React security/perf/a11y/architecture checks — advisory, never fails                                                                                                      |
 | PR merged → `prod`             | `ci-cd.yaml`                           | Deploy-webhook trigger + docs changelog dispatch                                                                                                                          |
 | PR merged → `prod`             | `strip-ai-on-pr.yml`                   | Remove AI config files from the prod branch, back-merge into `dev`                                                                                                        |
