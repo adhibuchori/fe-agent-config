@@ -16,7 +16,7 @@
 <circle cx="960" cy="416" r="104" fill="#352541" opacity="0.5"/>
 <path d="M1000,246Q1002.8,253.2 1010,256Q1002.8,258.8 1000,266Q997.2,258.8 990,256Q997.2,253.2 1000,246Z" fill="#818cf8" opacity="1"/>
 <path d="M1052,592Q1054.2,597.8 1060,600Q1054.2,602.2 1052,608Q1049.8,602.2 1044,600Q1049.8,597.8 1052,592Z" fill="#7dd3fc" opacity="1"/>
-<g transform="translate(847.2 310) scale(1.0)">
+<g transform="translate(850 301.35) scale(1.0)">
 <defs>
 <radialGradient id="mg" cx="50%" cy="60%" r="55%">
 <stop offset="0" stop-color="#a5b4fc"/>
@@ -58,40 +58,40 @@
 <path d="M104,190V630" stroke="#2b323d" stroke-width="4" stroke-dasharray="2 9" stroke-linecap="round"/>
 <rect x="60" y="146" width="820" height="88" rx="18" fill="#171b23" stroke="#2b323d" stroke-width="1.5" filter="url(#sh)"/>
 <rect x="60" y="146" width="14" height="88" rx="7" fill="#818cf8"/>
-<circle cx="110" cy="190" r="20" fill="#2a2946" stroke="#403e6e" stroke-width="1.5"/>
-<text class="s" x="110" y="197" font-size="20" font-weight="800" fill="#f4f1eb" text-anchor="middle">1</text>
+<circle cx="110" cy="190" r="20" fill="#6366f1" stroke="#818cf8" stroke-width="1.5"/>
+<text class="s" x="110" y="197" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle">1</text>
 <text class="s" x="148" y="181" font-size="22" font-weight="800" fill="#f4f1eb">Router</text>
 <rect x="232.9" y="160" width="102.3" height="31" rx="15.5" fill="#1f242e" stroke="#363e4b" stroke-width="1.5"/>
 <text class="m" x="284.1" y="180.8" font-size="15" font-weight="600" fill="#f4f1eb" text-anchor="middle">CLAUDE.md</text>
 <text class="s" x="148" y="214" font-size="17" font-weight="500" fill="#d2ccc0">What to read for which task. Short on purpose.</text>
 <rect x="60" y="256" width="820" height="88" rx="18" fill="#171b23" stroke="#2b323d" stroke-width="1.5" filter="url(#sh)"/>
 <rect x="60" y="256" width="14" height="88" rx="7" fill="#f9a8d4"/>
-<circle cx="110" cy="300" r="20" fill="#352541" stroke="#5a3a63" stroke-width="1.5"/>
-<text class="s" x="110" y="307" font-size="20" font-weight="800" fill="#f4f1eb" text-anchor="middle">2</text>
+<circle cx="110" cy="300" r="20" fill="#ec4899" stroke="#f472b6" stroke-width="1.5"/>
+<text class="s" x="110" y="307" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle">2</text>
 <text class="s" x="148" y="291" font-size="22" font-weight="800" fill="#f4f1eb">Guardrail</text>
 <rect x="259.2" y="270" width="102.3" height="31" rx="15.5" fill="#1f242e" stroke="#363e4b" stroke-width="1.5"/>
 <text class="m" x="310.3" y="290.8" font-size="15" font-weight="600" fill="#f4f1eb" text-anchor="middle">AGENTS.md</text>
 <text class="s" x="148" y="324" font-size="17" font-weight="500" fill="#d2ccc0">Numbered, citable rules every agent follows.</text>
 <rect x="60" y="366" width="820" height="88" rx="18" fill="#171b23" stroke="#2b323d" stroke-width="1.5" filter="url(#sh)"/>
 <rect x="60" y="366" width="14" height="88" rx="7" fill="#7dd3fc"/>
-<circle cx="110" cy="410" r="20" fill="#15303c" stroke="#1f4b5e" stroke-width="1.5"/>
-<text class="s" x="110" y="417" font-size="20" font-weight="800" fill="#f4f1eb" text-anchor="middle">3</text>
+<circle cx="110" cy="410" r="20" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5"/>
+<text class="s" x="110" y="417" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle">3</text>
 <text class="s" x="148" y="401" font-size="22" font-weight="800" fill="#f4f1eb">Contract</text>
 <rect x="255" y="380" width="84" height="31" rx="15.5" fill="#1f242e" stroke="#363e4b" stroke-width="1.5"/>
 <text class="m" x="297.0" y="400.8" font-size="15" font-weight="600" fill="#f4f1eb" text-anchor="middle">SSOT.md</text>
 <text class="s" x="148" y="434" font-size="17" font-weight="500" fill="#d2ccc0">What the codebase is: layers, naming, API, env.</text>
 <rect x="60" y="476" width="820" height="88" rx="18" fill="#171b23" stroke="#2b323d" stroke-width="1.5" filter="url(#sh)"/>
 <rect x="60" y="476" width="14" height="88" rx="7" fill="#818cf8"/>
-<circle cx="110" cy="520" r="20" fill="#2a2946" stroke="#403e6e" stroke-width="1.5"/>
-<text class="s" x="110" y="527" font-size="20" font-weight="800" fill="#f4f1eb" text-anchor="middle">4</text>
+<circle cx="110" cy="520" r="20" fill="#6366f1" stroke="#818cf8" stroke-width="1.5"/>
+<text class="s" x="110" y="527" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle">4</text>
 <text class="s" x="148" y="511" font-size="22" font-weight="800" fill="#f4f1eb">Machine</text>
 <rect x="251.4" y="490" width="93.2" height="31" rx="15.5" fill="#1f242e" stroke="#363e4b" stroke-width="1.5"/>
 <text class="m" x="298.0" y="510.8" font-size="15" font-weight="600" fill="#f4f1eb" text-anchor="middle">.claude/</text>
 <text class="s" x="148" y="544" font-size="17" font-weight="500" fill="#d2ccc0">Hooks, rules and commands that enforce it.</text>
 <rect x="60" y="586" width="820" height="88" rx="18" fill="#171b23" stroke="#2b323d" stroke-width="1.5" filter="url(#sh)"/>
 <rect x="60" y="586" width="14" height="88" rx="7" fill="#f9a8d4"/>
-<circle cx="110" cy="630" r="20" fill="#352541" stroke="#5a3a63" stroke-width="1.5"/>
-<text class="s" x="110" y="637" font-size="20" font-weight="800" fill="#f4f1eb" text-anchor="middle">5</text>
+<circle cx="110" cy="630" r="20" fill="#ec4899" stroke="#f472b6" stroke-width="1.5"/>
+<text class="s" x="110" y="637" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle">5</text>
 <text class="s" x="148" y="621" font-size="22" font-weight="800" fill="#f4f1eb">Gate</text>
 <rect x="211.8" y="600" width="93.2" height="31" rx="15.5" fill="#1f242e" stroke="#363e4b" stroke-width="1.5"/>
 <text class="m" x="258.4" y="620.8" font-size="15" font-weight="600" fill="#f4f1eb" text-anchor="middle">.github/</text>

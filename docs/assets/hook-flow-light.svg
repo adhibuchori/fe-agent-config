@@ -34,7 +34,7 @@
 <rect class="ring" x="60" y="336" width="380" height="96" rx="18" fill="none" stroke="#818cf8" stroke-width="2.5"/>
 </g>
 <circle cx="600" cy="300" r="118" fill="#e0e7ff" opacity="1"/>
-<g transform="translate(486.2 194) scale(1.0)">
+<g transform="translate(490 185.35) scale(1.0)">
 <defs>
 <radialGradient id="mg" cx="50%" cy="60%" r="55%">
 <stop offset="0" stop-color="#a5b4fc"/>
