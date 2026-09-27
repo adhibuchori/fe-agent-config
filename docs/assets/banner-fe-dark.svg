@@ -12,15 +12,15 @@
 </clipPath>
 <rect x="1" y="1" width="1198" height="358" rx="28" fill="#16140f" stroke="#37322a" stroke-width="2"/>
 <g clip-path="url(#cc)">
-<g class="blob"><circle cx="200" cy="200" r="150" fill="#3b2431"/></g>
+<g class="blob"><circle cx="200" cy="180" r="150" fill="#3b2431"/></g>
 <g class="blob blob2"><circle cx="1120" cy="40" r="110" fill="#3b2431" opacity="0.5"/></g>
 <g class="blob blob3"><circle cx="1010" cy="345" r="70" fill="#15303c" opacity="0.5"/></g>
 </g>
 <g class="tw tw1"><path d="M372,59Q375.1,66.9 383,70Q375.1,73.1 372,81Q368.9,73.1 361,70Q368.9,66.9 372,59Z" fill="#818cf8" opacity="1"/></g>
 <g class="tw tw2"><path d="M1060,141Q1062.5,147.5 1069,150Q1062.5,152.5 1060,159Q1057.5,152.5 1051,150Q1057.5,147.5 1060,141Z" fill="#f9a8d4" opacity="1"/></g>
-<g class="tw tw3"><path d="M96,292Q98.2,297.8 104,300Q98.2,302.2 96,308Q93.8,302.2 88,300Q93.8,297.8 96,292Z" fill="#7dd3fc" opacity="1"/></g>
+<g class="tw tw3"><path d="M96,272Q98.2,277.8 104,280Q98.2,282.2 96,288Q93.8,282.2 88,280Q93.8,277.8 96,272Z" fill="#7dd3fc" opacity="1"/></g>
 <g class="tw tw4"><path d="M1150,293Q1152,298 1157,300Q1152,302 1150,307Q1148,302 1143,300Q1148,298 1150,293Z" fill="#818cf8" opacity="1"/></g>
-<g transform="translate(72 78) scale(1.18)">
+<g transform="translate(72 58) scale(1.18)">
 <defs>
 <radialGradient id="mg" cx="50%" cy="60%" r="55%">
 <stop offset="0" stop-color="#a5b4fc"/>
@@ -68,7 +68,7 @@
 <path d="M170,166l7,7l13,-15" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="158" cy="170" r="9.5" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
 </g>
-<g transform="translate(250 44) scale(0.9)">
+<g transform="translate(250 24) scale(0.9)">
 <rect x="4" y="10" width="92" height="70" rx="12" fill="#ffffff" stroke="#1c1a15" stroke-width="3"/>
 <path d="M4,22a12,12 0 0 1 12,-12h68a12,12 0 0 1 12,12v8h-92z" fill="#f9a8d4" stroke="#1c1a15" stroke-width="3" stroke-linejoin="round"/>
 <circle cx="18" cy="21" r="3.2" fill="#1c1a15"/>
@@ -82,14 +82,14 @@
 <path d="M72,78h12q2,14 -6,20q-8,-6 -6,-20z" fill="#f9a8d4" stroke="#1c1a15" stroke-width="3" stroke-linejoin="round"/>
 </g>
 </g>
-<text class="s" x="400" y="168" font-size="64" font-weight="800" fill="#f4f1eb">fe-agent-config</text>
-<text class="s" x="402" y="214" font-size="23" font-weight="500" fill="#d2ccc0">Guardrails for Next.js frontends — for Claude Code</text>
-<rect x="402" y="248" width="201.9" height="32" rx="16.0" fill="#3b2431" stroke="#5a3448" stroke-width="1.5"/>
-<text class="s" x="502.9" y="269.6" font-size="16" font-weight="600" fill="#f4f1eb" text-anchor="middle">plugin: agent-fe-nextjs</text>
-<rect x="613.9" y="248" width="73.7" height="32" rx="16.0" fill="#2a2946" stroke="#403e6e" stroke-width="1.5"/>
-<text class="s" x="650.8" y="269.6" font-size="16" font-weight="600" fill="#f4f1eb" text-anchor="middle">hooks</text>
-<rect x="697.6" y="248" width="65.7" height="32" rx="16.0" fill="#15303c" stroke="#1f4b5e" stroke-width="1.5"/>
-<text class="s" x="730.5" y="269.6" font-size="16" font-weight="600" fill="#f4f1eb" text-anchor="middle">rules</text>
-<rect x="773.3" y="248" width="90.2" height="32" rx="16.0" fill="#3b2431" stroke="#5a3448" stroke-width="1.5"/>
-<text class="s" x="818.4" y="269.6" font-size="16" font-weight="600" fill="#f4f1eb" text-anchor="middle">CI gates</text>
+<text class="s" x="400" y="148" font-size="64" font-weight="800" fill="#f4f1eb">fe-agent-config</text>
+<text class="s" x="402" y="194" font-size="23" font-weight="500" fill="#d2ccc0">Guardrails for Next.js frontends — for Claude Code</text>
+<rect x="402" y="228" width="201.9" height="32" rx="16.0" fill="#3b2431" stroke="#5a3448" stroke-width="1.5"/>
+<text class="s" x="502.9" y="249.6" font-size="16" font-weight="600" fill="#f4f1eb" text-anchor="middle">plugin: agent-fe-nextjs</text>
+<rect x="613.9" y="228" width="73.7" height="32" rx="16.0" fill="#2a2946" stroke="#403e6e" stroke-width="1.5"/>
+<text class="s" x="650.8" y="249.6" font-size="16" font-weight="600" fill="#f4f1eb" text-anchor="middle">hooks</text>
+<rect x="697.6" y="228" width="65.7" height="32" rx="16.0" fill="#15303c" stroke="#1f4b5e" stroke-width="1.5"/>
+<text class="s" x="730.5" y="249.6" font-size="16" font-weight="600" fill="#f4f1eb" text-anchor="middle">rules</text>
+<rect x="773.3" y="228" width="90.2" height="32" rx="16.0" fill="#3b2431" stroke="#5a3448" stroke-width="1.5"/>
+<text class="s" x="818.4" y="249.6" font-size="16" font-weight="600" fill="#f4f1eb" text-anchor="middle">CI gates</text>
 </svg>
