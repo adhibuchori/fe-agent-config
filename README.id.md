@@ -1364,7 +1364,7 @@ men-strip.
 - **Setiap aturan dibuktikan dua arah.** `scripts/check/hook-probes.sh` memberi safety-check 569
   perintah yang wajib ditolak dan 276 yang wajib diloloskan
   ([`hook-probes.tsv`](scripts/check/hook-probes.tsv)), lalu membuktikan guard lainnya, setiap mode
-  gagal, dan git worktree yang ditautkan: 2.362 probe di salinan baru, semuanya lulus di
+  gagal, dan git worktree yang ditautkan: 2.365 probe di salinan baru, semuanya lulus di
   `/bin/bash` 3.2 milik macOS. Ia berjalan di pre-commit saat file hook di-stage, dan di setiap
   gerbang pull request. Audit dengan membaca tabelnya dan menjalankan skripnya.
 - **Berlapis, bukan satu tembok.** Hook membaca teks perintah; aturan `deny` di

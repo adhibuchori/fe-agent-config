@@ -1317,7 +1317,7 @@ once. Do not test the deploy path that way; a merge into `prod` deploys and stri
   [fail-mode table](.claude/hooks/README.md#fail-modes) lists every case.
 - **Every rule is proven both ways.** `scripts/check/hook-probes.sh` feeds safety-check 569
   commands it must refuse and 276 it must allow ([`hook-probes.tsv`](scripts/check/hook-probes.tsv)),
-  then proves the other guards, each fail mode and a linked git worktree: 2,362 probes in a fresh
+  then proves the other guards, each fail mode and a linked git worktree: 2,365 probes in a fresh
   copy, all passing under macOS's `/bin/bash` 3.2. It runs in pre-commit when a hooks file is
   staged, and in every pull-request gate. Audit it by reading the table and running the script.
 - **Layers, not one wall.** The hooks read command text; the `deny` rules in
