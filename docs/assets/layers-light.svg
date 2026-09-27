@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 726" role="img" aria-labelledby="t d">
 <title id="t">Five layers</title>
 <desc id="d">Five stacked cards: Router (CLAUDE.md), Guardrail (AGENTS.md), Contract (SSOT.md), Machine (.claude/ hooks, rules, commands) and Gate (.github/ CI), with the hedgehog mascot beside the stack.</desc>
 <defs>
@@ -8,9 +8,9 @@
 </filter>
 </defs>
 <clipPath id="cc">
-<rect x="1" y="1" width="1098" height="698" rx="28"/>
+<rect x="1" y="1" width="1098" height="724" rx="28"/>
 </clipPath>
-<rect x="1" y="1" width="1098" height="698" rx="28" fill="#fbfaf7" stroke="#e8e4da" stroke-width="2"/>
+<rect x="1" y="1" width="1098" height="724" rx="28" fill="#fbfaf7" stroke="#e8e4da" stroke-width="2"/>
 <text class="s" x="60" y="78" font-size="34" font-weight="800" fill="#1c1a15">Five layers, one job each</text>
 <text class="s" x="60" y="112" font-size="19" font-weight="500" fill="#57534a">Read top-down: the agent is routed, ruled, informed, enforced, then gated.</text>
 <circle cx="960" cy="416" r="104" fill="#fce7f3" opacity="1"/>
