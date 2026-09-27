@@ -52,6 +52,11 @@ git() {
 HOOK_DEADLINE=8
 SECONDS=0
 
+# The folder the running hooks live in, physical: .claude/hooks as a template, the plugin's
+# scripts/ as a plugin. Taken while this file is sourced, before hook_root changes folder; the shell
+# rules refuse any change to it (the guard scripts, in analyze_command).
+HOOK_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)"
+
 # Every hook begins with hook_start <guard|feedback> <tag> [plaintext]: the plugin gate, the
 # payload, the payload check (guards only) and the project folder. `plaintext` lets a guard go on
 # with HOOK_NO_READER=1 when neither python3 nor jq exists; safety-check.sh then judges the raw
@@ -1385,6 +1390,135 @@ def config_area(p, parents=False):
     return ((folder == ".claude" and name in GUARD_NAMES) or name == "opted-in-projects") and not throwaway(p)
 
 
+# The guard scripts: the hooks that are running (HOOK_LIB_DIR, the folder lib.sh is in: .claude/hooks
+# as a template, the plugin's scripts/ as a plugin), the plugin's own scripts/ and hooks/
+# (CLAUDE_PLUGIN_ROOT), any .claude/hooks/ (this repo's, another checkout's, ~/.claude/hooks), the
+# plugins Claude Code installed (.claude/plugins/), and scripts/check/hook-probes.*, the probes that
+# prove the hooks. scripts/ops/unlock.sh is guarded by the unlock rules above. The shell may read,
+# run and copy them; a changed guard stops guarding, so a change goes through the Edit tool or the
+# user's `!`. A throwaway fixture under a temp folder is not one, the running hooks aside.
+def physical(p):
+    return os.path.realpath(p).lower() if p else ""
+
+
+PLUGIN_ROOT = physical(os.environ.get("CLAUDE_PLUGIN_ROOT", "").strip())
+HOOK_HOMES = sorted({h for h in [physical(os.environ.get("HOOK_LIB_DIR", "").strip())]
+                     + ([os.path.join(PLUGIN_ROOT, "scripts"), os.path.join(PLUGIN_ROOT, "hooks")] if PLUGIN_ROOT else [])
+                     if h and h not in ("/", HOME.lower())})
+# The same places named in code, a sed script, a patch or a whole command line.
+HOOKS_TEXT = re.compile(r"\.claude\W{0,8}(?:hooks|plugins)(?![\w-])|hook-probes|CLAUDE_PLUGIN_ROOT", re.I)
+
+
+def hooks_text(text):
+    """Whether text names a guard script: by name, spelled in pieces ('.cl' + 'aude/hooks'), or by
+    the running hooks' or the plugin's own path."""
+    low = text.lower()
+    compact = re.sub(r"[\s'\"\\/+,]+", "", low)
+    return bool(HOOKS_TEXT.search(text) or re.search(r"\.claude(?:hooks|plugins)|hook-?probes", compact)
+                or any(h in low for h in HOOK_HOMES) or (PLUGIN_ROOT and PLUGIN_ROOT in low))
+
+
+def hooks_area(p, parents=False):
+    """Whether a path is a guard script or in a folder of them; with parents, a folder that holds
+    one directly (a .claude folder, scripts/check, the plugin's folder) counts too."""
+    low = p.lower()
+    if any(inside(low, h) for h in HOOK_HOMES) or (parents and PLUGIN_ROOT and low == PLUGIN_ROOT):
+        return True
+    padded = low.rstrip("/") + "/"
+    named = ("/.claude/hooks/" in padded or "/.claude/plugins/" in padded
+             or re.search(r"/scripts/check/hook-probes\.[^/]*\Z", low) is not None
+             or (parents and padded.endswith(("/.claude/", "/scripts/check/"))))
+    return named and not throwaway(p)
+
+
+def guard_holder(p):
+    """The kind of guarded place a folder holds at any depth ("" for none), for a command that would
+    carry it along: moving or linking the folder, changing its modes, checking it out."""
+    low = p.lower().rstrip("/") or "/"
+    places = [("hooks", h) for h in HOOK_HOMES] + [
+        ("hooks", os.path.join(ROOT, ".claude", "hooks").lower()), ("hooks", os.path.join(ROOT, "scripts", "check").lower()),
+        ("helpers", HELPERS), ("token", TOKENS), ("config", os.path.join(ROOT, ".claude").lower()),
+        ("unlock", os.path.join(ROOT, "scripts", "ops").lower())]
+    return next((kind for kind, place in places if inside(place, low)), "")
+
+
+ANCESTOR_OPS = {"mv", "ln", "link", "chmod", "chown", "chgrp", "chflags", "xattr", "setfacl"}
+GIT_CHANGERS = {"rm", "mv", "checkout", "restore", "stash"}
+# Commands that change the files they are handed.
+CHANGERS = {"rm", "unlink", "rmdir", "shred", "mv", "cp", "gcp", "ln", "link", "install", "rsync", "ditto", "chmod",
+            "chown", "chgrp", "chflags", "xattr", "setfacl", "truncate", "tee", "dd"}
+
+
+def carried_along(head, args, wd):
+    """The operands a command carries along with everything under them: what mv, ln and link move
+    or link (their sources), every operand of chmod and its kin, and the pathspecs of a git command
+    that rewrites the working tree (checkout, restore, stash, rm, mv; the index-only forms aside)."""
+    if head in ("mv", "ln", "link"):
+        return copy_operands(args)[0]
+    if head in ANCESTOR_OPS:
+        return [a for a in args if not a.startswith("-")]
+    if head == "git":
+        sub, k = git_sub(args)
+        if sub not in GIT_CHANGERS or config_reader(head, args):
+            return []
+        rest = args[k + 1:]
+        return rest[rest.index("--") + 1:] if "--" in rest else [a for a in rest if not a.startswith("-")]
+    return []
+
+
+def changes_files(head, args):
+    """Whether a command changes the files it is handed: one of CHANGERS, sed, perl or ruby editing
+    in place, or a git command that rewrites paths in the working tree."""
+    if head in CHANGERS:
+        return True
+    if head in SED_NAMES:
+        return any(a.startswith("--in-place") or re.fullmatch(r"-[A-Za-z]*[iI].*", a, re.S) for a in args)
+    if head in ("perl", "ruby"):
+        return any(re.fullmatch(r"-[A-Za-z0-9]*i.*", a, re.S) for a in args if not a.startswith("--"))
+    return head == "git" and git_sub(args)[0] in GIT_CHANGERS and not config_reader(head, args)
+
+
+def xargs_replacements(words):
+    """The strings xargs replaces with each input line (-I, -J, -i, --replace), read from its own
+    options in the raw words."""
+    found = set()
+    k = next((k + 1 for k, w in enumerate(words) if os.path.basename(w) == "xargs"), len(words))
+    while k < len(words) and words[k].startswith("-"):
+        w = words[k]
+        if w in ("-I", "-J") and k + 1 < len(words):
+            found.add(words[k + 1])
+        elif re.fullmatch(r"-[IJ].+", w):
+            found.add(w[2:])
+        elif w in ("-i", "--replace"):
+            found.add("{}")
+        elif w.startswith(("--replace=", "-i")):
+            found.add(w.split("=", 1)[1] if "=" in w else w[2:])
+        k += 2 if w in ("-n", "-I", "-J", "-P", "-L", "-s", "-d", "-E", "-a") else 1
+    return found
+
+
+# Variables this command line set from a $( ) the analyzer could not compute: a path in one is as
+# unknown as the substitution itself. mktemp's new path is the one exception.
+TAINTED = set()
+
+
+def near_guard(cwd):
+    """The kind of guarded place a folder is in or directly holds, "" for none: code run there can
+    reach one by a bare name (`os.remove('settings.json')` in .claude)."""
+    low = cwd.lower().rstrip("/")
+    kind = landing(cwd) or ("hooks" if hooks_area(cwd, parents=True) else "")
+    if kind:
+        return kind
+    if low.endswith("/.claude/state"):
+        return "token"
+    if low.endswith("/scripts") and (low == os.path.dirname(HELPERS) or os.path.isdir(os.path.join(cwd, "env"))):
+        return "helpers"
+    if low.endswith("/scripts/ops") and (low == os.path.join(ROOT, "scripts", "ops").lower()
+                                         or os.path.exists(os.path.join(cwd, "unlock.sh"))):
+        return "unlock"
+    return ""
+
+
 def config_reader(head, args):
     """Whether a command only reads the guard files it names, beyond the lookers: jq; sed with no
     in-place flag and no script file (a script naming a guard file is refused apart, since its w
@@ -1403,36 +1537,391 @@ def config_reader(head, args):
     for a in args:
         if a == "--":
             break
-        if a.startswith(("--in-place", "--file")) or re.fullmatch(r"-[A-Za-z]*[iIf][A-Za-z]*", a):
+        # -i and -I take a backup suffix in the same word (-i.bak), -f a file (-fprog.sed).
+        if a.startswith(("--in-place", "--file")) or re.fullmatch(r"-[A-Za-z]*[iIf].*", a, re.S):
             return False
     return True
 
 
-def sed_scripts(args):
-    """The script texts of a sed call: every -e value, else its first operand."""
-    found, k, first = [], 0, None
+SED_NAMES = {"sed", "gsed"}
+
+
+def read_script_file(name, fed, cwd):
+    """The text of a script file a program is handed (sed -f, awk -f); stdin means what a heredoc
+    or here-string feeds it. None when it cannot be read: a name the analyzer cannot resolve, a
+    file that is not there yet (a command before it on the line may write it), stdin from elsewhere."""
+    if name in STDIN_PATHS:
+        return "\n".join(fed) if fed else None
+    if unresolved(name) or unresolved(cwd):
+        return None
+    try:
+        with open(resolve(name, cwd), "rb") as fh:
+            return fh.read(1 << 20).decode("utf-8", "surrogateescape")
+    except OSError:
+        return None
+
+
+def sed_programs(args, fed, cwd):
+    """(the programs a sed call may run, strict): the -e values and -f files joined as sed joins
+    them, else its first operand. After a bare -i or -I, BSD sed takes the next word as a backup
+    suffix and GNU sed takes it as the program, so both next operands are candidates and strict is
+    False. None when a -f file cannot be read."""
+    exprs, operands, k, bare_i = [], [], 0, None
     while k < len(args):
         a = args[k]
-        m = None if a.startswith("--") else re.fullmatch(r"-[A-Za-z]*e(.*)", a, re.S)
-        if a == "--expression" or (m and not m.group(1)):
-            found += args[k + 1:k + 2]
-            k += 2
-            continue
-        if m:
-            found.append(m.group(1))
-        elif a.startswith("--expression="):
-            found.append(a.split("=", 1)[1])
-        elif first is None and not a.startswith("-"):
-            first = a
+        if a == "--":
+            operands += args[k + 1:]
+            break
+        name, eq, value = a.partition("=")
+        if name in ("--expression", "--file"):
+            if not eq:
+                value, k = (args[k + 1] if k + 1 < len(args) else ""), k + 1
+            text = value if name == "--expression" else read_script_file(value, fed, cwd)
+            if text is None:
+                return None
+            exprs.append(text)
+        elif a.startswith("-") and len(a) > 1 and not a.startswith("--"):
+            j = 1
+            while j < len(a):
+                ch, rest = a[j], a[j + 1:]
+                if ch in "iI":
+                    bare_i = None if rest else len(operands)  # the rest of the cluster is a suffix
+                    break
+                if ch in "ef":
+                    if not rest:
+                        rest, k = (args[k + 1] if k + 1 < len(args) else ""), k + 1
+                    text = rest if ch == "e" else read_script_file(rest, fed, cwd)
+                    if text is None:
+                        return None
+                    exprs.append(text)
+                    break
+                if ch == "l":
+                    if not rest and k + 1 < len(args) and args[k + 1].isdigit():
+                        k += 1
+                    break
+                j += 1
+        elif not a.startswith("--"):
+            operands.append(a)
         k += 1
-    return found or ([first] if first is not None else [])
+    if exprs:
+        return ["\n".join(exprs)], True
+    if bare_i == 0 and len(operands) > 1:
+        return operands[:2], False
+    return operands[:1], True
+
+
+def sed_parse(script):
+    """(the files a sed program writes: w, W and the s///w flag; the files it reads: r and R; the
+    commands it runs: e and the s///e flag, None standing for the pattern space) or None when it is
+    not a program sed would accept. GNU and BSD commands both count."""
+    writes, reads, runs, i, n = [], [], [], 0, len(script)
+
+    def line_end(j):
+        k = script.find("\n", j)
+        return n if k < 0 else k
+
+    def delimited(j, delim):
+        """The index after the closing delimiter of a part that starts at j, or None."""
+        while j < n:
+            if script[j] == "\\":
+                j += 2
+                continue
+            if script[j] == "\n" and delim != "\n":
+                return None
+            if script[j] == delim:
+                return j + 1
+            j += 1
+        return None
+
+    def address(j):
+        """The index after an address at j (j itself when there is none), or None."""
+        if j < n and script[j].isdigit():
+            while j < n and (script[j].isdigit() or script[j] == "~"):
+                j += 1
+            return j
+        if j < n and script[j] == "$":
+            return j + 1
+        if j < n and script[j] in "/\\":
+            if script[j] == "\\":
+                if j + 1 >= n:
+                    return None
+                j = delimited(j + 2, script[j + 1])
+            else:
+                j = delimited(j + 1, "/")
+            if j is None:
+                return None
+            while j < n and script[j] in "IM":
+                j += 1
+        return j
+
+    while i < n:
+        c = script[i]
+        if c in " \t\n;":
+            i += 1
+            continue
+        if c == "#":
+            i = line_end(i)
+            continue
+        j = address(i)
+        if j is None:
+            return None
+        if j != i:
+            k = j
+            while k < n and script[k] in " \t":
+                k += 1
+            if k < n and script[k] == ",":
+                k += 1
+                while k < n and script[k] in " \t":
+                    k += 1
+                if k < n and script[k] in "+~":
+                    k += 1
+                    while k < n and script[k].isdigit():
+                        k += 1
+                    j = k
+                else:
+                    j = address(k)
+                    if j is None or j == k:
+                        return None
+        i = j
+        while i < n and script[i] in " \t!":
+            i += 1
+        if i >= n:
+            return None
+        cmd, i = script[i], i + 1
+        if cmd in "{}=dDgGhHnNpPxzF":
+            continue
+        if cmd in "aic":
+            # Text to the end of the line; a line that ends in a backslash goes on.
+            while True:
+                i = line_end(i)
+                if i >= n or script[i - 1] != "\\":
+                    break
+                i += 1
+        elif cmd in ":btT":
+            while i < n and script[i] not in "\n;":
+                i += 1
+        elif cmd in "rRwW":
+            end = line_end(i)
+            (writes if cmd in "wW" else reads).append(script[i:end].strip())
+            i = end
+        elif cmd == "e":
+            end = line_end(i)
+            runs.append(script[i:end].strip() or None)
+            i = end
+        elif cmd in "sy":
+            if i >= n or script[i] in "\n\\":
+                return None
+            j = delimited(i + 1, script[i])
+            j = delimited(j, script[i]) if j is not None else None
+            if j is None:
+                return None
+            i = j
+            while cmd == "s" and i < n and script[i] in "gpeiImM0123456789":
+                if script[i] == "e":
+                    runs.append(None)
+                i += 1
+            if cmd == "s" and i < n and script[i] == "w":
+                end = line_end(i + 1)
+                writes.append(script[i + 1:end].strip())
+                i = end
+        elif cmd in "qQlLv":
+            while i < n and script[i] not in "\n;}":
+                i += 1
+        else:
+            return None
+    return writes, reads, runs
+
+
+AWK_NAMES = {"awk", "gawk", "mawk", "nawk"}
+AWK_OPERAND = {"nl", ";", "{", "}", "(", ",", "!", "~", "&&", "||", "?", ":", "=", "==", "!=", "<", "<=", ">", ">=",
+               "+", "-", "*", "%", "^", "print", "printf", "return", "in"}
+
+
+def awk_programs(args, cwd):
+    """The program texts of an awk call: its -f files and gawk's -e/--source texts, else its first
+    operand. None when a program file cannot be read, or gawk is told to include or load code."""
+    texts, files, k = [], [], 0
+    while k < len(args):
+        a = args[k]
+        name, eq, value = a.partition("=")
+        if a == "--":
+            k += 1
+            break
+        if name in ("--file", "--source", "--include", "--load") or a in ("-f", "-e", "-i", "-l"):
+            if not eq and "=" not in a:
+                value, k = (args[k + 1] if k + 1 < len(args) else ""), k + 1
+            if name in ("--include", "--load") or a in ("-i", "-l"):
+                return None
+            (files if name == "--file" or a == "-f" else texts).append(value)
+        elif a in ("-F", "-v"):
+            k += 1
+        elif not a.startswith("-") or a == "-":
+            break
+        k += 1
+    for f in files:
+        text = read_script_file(f, [], cwd)
+        if text is None:
+            return None
+        texts.append(text)
+    if not files and not texts and k < len(args):
+        texts.append(args[k])
+    return texts
+
+
+AWK_WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|[0-9.]+(?:[eE][-+]?[0-9]+)?|\|&|>>|&&|\|\||[<>!=]=|\S")
+
+
+def awk_io(prog):
+    """What an awk program reaches besides its input: (files it writes with print or printf > and
+    >>, commands it runs with system(), print | and | getline, files it reads with getline <), each
+    as the literal string it names, or None for one built at run time; a command comes with whether
+    it reads the program's output (print |). None when it cannot be read (a program that pulls in
+    other code with @include or @load)."""
+    toks, i, n = [], 0, len(prog)
+    while i < n:
+        c = prog[i]
+        if c in " \t\r" or prog.startswith("\\\n", i):
+            i += 1 if c in " \t\r" else 2
+        elif c == "\n":
+            toks.append(("op", "nl"))
+            i += 1
+        elif c == "#":
+            j = prog.find("\n", i)
+            i = n if j < 0 else j
+        elif c == "@":
+            return None
+        elif c == '"':
+            j = i + 1
+            while j < n and prog[j] != '"':
+                j += 2 if prog[j] == "\\" else 1
+            toks.append(("str", ansi_decode(prog[i + 1:j])))
+            i = j + 1
+        elif c == "/" and (not toks or toks[-1][0] == "op" and toks[-1][1] in AWK_OPERAND
+                           or toks[-1] in (("id", "print"), ("id", "printf"), ("id", "return"), ("id", "in"))):
+            j, bracket = i + 1, False
+            while j < n and (bracket or prog[j] != "/") and prog[j] != "\n":
+                if prog[j] == "\\":
+                    j += 1
+                elif prog[j] == "[":
+                    bracket = True
+                elif prog[j] == "]":
+                    bracket = False
+                j += 1
+            toks.append(("re", prog[i:j + 1]))
+            i = j + 1
+        else:
+            word = AWK_WORD.match(prog, i).group(0)
+            toks.append(("id" if word[0].isalpha() or word[0] == "_" else "num" if word[0] in "0123456789." else "op",
+                         word))
+            i += len(word)
+
+    def is_op(k, *words):
+        return 0 <= k < len(toks) and toks[k][0] == "op" and toks[k][1] in words
+
+    def literal(a, b):
+        """The string toks[a:b] names when it is only string literals (concatenated) in optional
+        parentheses, else None."""
+        while b - a >= 2 and is_op(a, "(") and is_op(b - 1, ")"):
+            a, b = a + 1, b - 1
+        part = toks[a:b]
+        return "".join(v for _, v in part) if part and all(t == "str" for t, _ in part) else None
+
+    def group_end(j):
+        """The index after the parenthesised group that opens at j."""
+        depth = 0
+        while j < len(toks):
+            depth += 1 if is_op(j, "(") else -1 if is_op(j, ")") else 0
+            j += 1
+            if depth <= 0:
+                break
+        return j
+
+    def statement_end(j):
+        while j < len(toks) and not is_op(j, "nl", ";", "}"):
+            j += 1
+        return j
+
+    writes, runs, reads = [], [], []
+    for k, tok in enumerate(toks):
+        if tok in (("id", "print"), ("id", "printf")):
+            # The statement runs to a newline, ; or } outside brackets; its first >, >> or | there
+            # sends the output to a file or a command.
+            j, depth = k + 1, 0
+            while j < len(toks) and not (depth == 0 and is_op(j, "nl", ";", "}")):
+                depth += 1 if is_op(j, "(", "[") else -1 if is_op(j, ")", "]") else 0
+                if depth == 0 and is_op(j, ">", ">>", "|", "|&"):
+                    target = literal(j + 1, statement_end(j + 1))
+                    (writes.append(target) if is_op(j, ">", ">>") else runs.append((target, True)))
+                    break
+                j += 1
+        elif tok == ("id", "getline"):
+            if is_op(k - 1, "|", "|&"):
+                # The command is the operand before the pipe: one string, or a parenthesised group.
+                j = k - 2
+                if is_op(j, ")"):
+                    depth = 0
+                    while j >= 0:
+                        depth += 1 if is_op(j, ")") else -1 if is_op(j, "(") else 0
+                        if depth == 0:
+                            break
+                        j -= 1
+                before_is_operand = j > 0 and not (toks[j - 1][0] == "op" and toks[j - 1][1] not in (")", "]"))
+                runs.append((None if j < 0 or before_is_operand else literal(j, k - 1), False))
+            j = k + 1
+            if j < len(toks) and toks[j][0] == "id":
+                j += 1
+            if is_op(j, "<"):
+                reads.append(literal(j + 1, group_end(j + 1) if is_op(j + 1, "(") else j + 2))
+        elif tok == ("id", "system") and is_op(k + 1, "("):
+            runs.append((literal(k + 1, group_end(k + 1)), False))
+    return writes, runs, reads
+
+
+# Special files a program may write without writing a file.
+STD_STREAMS = {"/dev/stdout", "/dev/stderr", "/dev/null", "/dev/fd/1", "/dev/fd/2", "-"}
+
+
+def judge_write(target, cwd, what):
+    """Refuses a file a program writes by name (a sed w, an awk print >) as a redirect to that name
+    is refused; a name built at run time is refused as unknown."""
+    t = "" if target is None else target.strip()
+    if t in STD_STREAMS:
+        return
+    if not t or any(m in t for m in ("$", "`", "__SUBST")):
+        return block(f"[safety] BLOCKED: {what} writes to a file whose name is built at run time, so safety-check "
+                     "cannot tell whether it is a .env* file, an unlock file, scripts/env/, a guard file or a guard "
+                     "script. Write to a named path; if it is meant, the user runs it with `!`.")
+    name = env_named(t, cwd)
+    if name:
+        return block(env_message(name))
+    if token_word(t, cwd, False):
+        return block(token_message())
+    kind = kit_word(t, cwd, path=True)
+    if kind:
+        block(kind_message(kind))
+
+
+def judge_read(source, cwd, what):
+    """Refuses a file a program reads by name (a sed r, an awk getline <) when it is a .env* file,
+    or when the name is built at run time."""
+    t = "" if source is None else source.strip()
+    if t in STD_STREAMS or t in ("/dev/stdin", "/dev/fd/0"):
+        return
+    if not t or any(m in t for m in ("$", "`", "__SUBST")):
+        return block(f"[safety] BLOCKED: {what} reads a file whose name is built at run time, so a .env* read "
+                     "cannot be ruled out. Read a named file; if it is meant, the user runs it with `!`.")
+    name = env_named(t, cwd)
+    if name:
+        block(env_message(name))
 
 
 def landing(p):
     """Which guarded place a path is in: "token" (an unlock folder), "helpers" (scripts/env/),
-    "config" (a guard file) or ""."""
+    "config" (a guard file), "hooks" (a guard script), "unlock" (an unlock.sh) or ""."""
     low = p.lower()
-    return "token" if token_area(low) else "helpers" if helper_area(low) else "config" if config_area(p) else ""
+    return ("token" if token_area(low) else "helpers" if helper_area(low) else "config" if config_area(p)
+            else "hooks" if hooks_area(p) else "unlock" if os.path.basename(low) == "unlock.sh" and not throwaway(p)
+            else "")
 # A .env* name: .env, .envrc, .env.<anything>. One holding .example is a template, open to all.
 ENV_NAME = re.compile(r"\.env(?:rc)?(?:[._-].*)?\Z", re.I | re.S)
 # The same name in code or free text, after no word character (process.env and os.environ are not).
@@ -1488,6 +1977,18 @@ INLINE_FILE = re.compile(
     r"\bopen\s*\(|\bfopen\b|glob\.glob|iglob|os\.listdir|os\.scandir|os\.walk|\bpathlib\b|\bPath\s*\(|"
     r"\.read_text|\.read_bytes|readFileSync|readFile\b|createReadStream|require\(\s*['\"](?:fs|node:fs)|"
     r"\bimport\b[^\n;]*\bfs\b|File\.(?:read|open)|IO\.read|\bopen\b\s*FH|\bslurp\b|\.readlines\b|\.readline\b",
+    re.I)
+# Inline code that changes, moves or deletes a file, or runs a command (python, node, bun, deno,
+# perl, ruby, php, lua, R, osascript): refused wherever it runs, since the file it reaches cannot be
+# read from its text (a name built in pieces, relative to a folder it picks, handed to a shell).
+INLINE_CHANGE = re.compile(
+    r"\bos\.(?:remove|unlink|rename|renames|replace|rmdir|removedirs|l?chmod|l?chown|chflags|symlink|link|truncate|"
+    r"utime|system|popen|exec\w*|spawn\w*|posix_spawn\w*|execute)\b|\bshutil\.|\bsubprocess\b|\bpty\.spawn|"
+    r"child_process|\b(?:execSync|execFileSync|spawnSync|writeFile\w*|appendFile\w*|copyFile\w*|rmSync|unlinkSync)\b|"
+    r"\bBun\.(?:write|file|spawn\w*|\$)|\bDeno\.\w+|\bFileUtils\b|\bFile\.(?:write|delete|rename|unlink|chmod|symlink)|"
+    r"(?<![.\w$])(?:system|exec|unlink|rename|chmod|chown|symlink|truncate|qx|shell_exec|passthru|proc_open|popen)"
+    r"\s*[(\"'`{$@]|"
+    r"%x[({\[]|\bIO\.popen\b|\bKernel\.|\bio\.(?:open|popen|output)\b|\bfile_put_contents\b|\bdo shell script\b",
     re.I)
 # Global glob state: shopt -s dotglob makes a glob match dot files (.env* included).
 DOTGLOB = [False]
@@ -1677,6 +2178,8 @@ def mentions(text):
         MENTIONS.add("token")
     if GUARD_TEXT.search(text):
         MENTIONS.add("config")
+    if hooks_text(text):
+        MENTIONS.add("hooks")
     if any(".example" not in m.group(0).lower() for m in ENV_TEXT.finditer(text)):
         MENTIONS.add("env")
 
@@ -1758,12 +2261,16 @@ def script_run(ws, raw, cwd):
     return resolve(raw, cwd) if "/" in raw and not unresolved(raw) else ""
 
 
-def kit_word(word, cwd, parents=False):
+def kit_word(word, cwd, parents=False, path=False):
     """What a path word names: "unlock" for an unlock.sh (any copy), "helpers" for scripts/env/ or
     a file in it (with parents, scripts/ as well), "config" for a guard file (with parents, a
-    folder holding the opt-in record as well), else "". A glob counts by what it can expand to
-    here; a word holding a space is text, not a path."""
-    if len(word) > 4096 or re.search(r"\s", word) or unresolved(cwd):
+    folder holding the opt-in record as well), "hooks" for a guard script or its folder (with
+    parents, a folder holding one directly), else "". A glob counts by what it can expand to here;
+    a word holding a space is text, not a path, unless it starts at / or ~ or path says it is one
+    (a redirect's target, a file a sed or awk program writes)."""
+    if len(word) > 4096 or "\n" in word or unresolved(cwd):
+        return ""
+    if re.search(r"\s", word) and not path and not word.startswith(("/", "~/")):
         return ""
     for w in brace_forms(word):
         for c in {w, w.split("=", 1)[-1]}:
@@ -1780,6 +2287,8 @@ def kit_word(word, cwd, parents=False):
                     return "helpers"
                 if config_area(path, parents):
                     return "config"
+                if hooks_area(path, parents):
+                    return "hooks"
     return ""
 
 
@@ -2005,6 +2514,8 @@ def lands_in_tokens(head, args, cwd):
             # The repo's own helpers and guard files copied elsewhere change nothing the rules trust.
             own = inside(os.path.join(src, rel).lower(), HELPERS)
             mine = inside(os.path.join(src, rel), os.path.join(ROOT, ".claude"))
+            ours = any(inside(os.path.join(src, rel).lower(), d) for d in HOOK_HOMES + [
+                os.path.join(ROOT, *d).lower() for d in ((".claude", "hooks"), ("scripts", "check"), ("scripts", "ops"))])
             if dest is None:
                 low = ("/" + base + "/" + rel).lower()
                 if "state/unlock/" in low:
@@ -2013,6 +2524,9 @@ def lands_in_tokens(head, args, cwd):
                     return "helpers"
                 if not mine and os.path.basename(low) in GUARD_NAMES and low.rsplit("/", 2)[-2] == ".claude":
                     return "config"
+                if not ours and ("/.claude/hooks/" in low or "/.claude/plugins/" in low or os.path.basename(low) == "unlock.sh"
+                                 or re.search(r"/scripts/check/hook-probes\.[^/]*\Z", low)):
+                    return "hooks"
                 continue
             for land in (dest, os.path.join(dest, base)):
                 kind = landing(os.path.normpath(os.path.join(land, rel)))
@@ -2059,7 +2573,7 @@ def extracts_to_tokens(head, args, cwd):
         above = [kind for kind, place in (("token", TOKENS), ("helpers", HELPERS),
                                           ("config", os.path.join(ROOT, ".claude").lower()))
                  if d == place or place.startswith(d.rstrip("/") + "/")]
-        return above[0] if above else ""
+        return above[0] if above else guard_holder(dest) or ("hooks" if hooks_area(dest) else "")
     return next((kind for kind in (landing(os.path.normpath(os.path.join(dest, n))) for n in names) if kind), "")
 
 
@@ -2077,6 +2591,8 @@ def patch_mentions(files, cwd):
             return "helpers"
         if GUARD_TEXT.search(text):
             return "config"
+        if hooks_text(text) or re.search(r"(?:^|/)unlock\.sh\b", text, re.I | re.M):
+            return "hooks"
     return ""
 
 
@@ -2097,9 +2613,10 @@ def helper_message():
 
 
 def token_message():
-    return ("[safety] BLOCKED: only the user unlocks .env* files and database writes. The agent never runs the "
-            "unlock script or its package.json alias, and never creates, changes, links or removes anything in "
-            f".claude/state/unlock/. When a task needs it, ask the user to run `{unlock_hint(ROOT, 'env')}` (db in "
+    return ("[safety] BLOCKED: only the user unlocks .env* files and database writes. The agent never runs or "
+            "changes the unlock script, never runs its package.json alias, and never creates, changes, links or "
+            "removes anything in .claude/state/unlock/. When a task needs it, ask the user to run "
+            f"`{unlock_hint(ROOT, 'env')}` (db in "
             "place of env for database writes) themselves; docs/unlock.md explains it.")
 
 
@@ -2111,10 +2628,27 @@ def config_message():
             "user first; if the shell must do it, the user runs it with `!`.")
 
 
+def hooks_message():
+    return ("[safety] BLOCKED: this changes a guard script: the hooks in .claude/hooks/ (as a plugin, the plugin's "
+            "scripts/ and hooks/ folders), scripts/check/hook-probes.* that prove them, or scripts/ops/unlock.sh. A "
+            "changed guard stops guarding, so the shell may read them (and run and copy out the hooks and probes) but "
+            "never write, truncate, copy over, move, link, chmod, delete or check out over them. Change one with the "
+            "Edit tool, where the user sees the change; if the shell must do it, the user runs it with `!`.")
+
+
+# Paths a command changes that arrive from a pipeline (xargs), from find or from $( ): which of them
+# is a guard script, scripts/env/, a guard file or an unlock file cannot be checked.
+FED_CHANGE = ("[safety] BLOCKED: this hands a command that changes files (rm, mv, cp, ln, chmod, truncate, tee, "
+              "sed -i, perl -i, git checkout/restore/rm/mv/stash, ...) paths from xargs, find or a $( ) "
+              "substitution, so whether one is a guard script (.claude/hooks/, scripts/check/hook-probes.*, "
+              "scripts/ops/unlock.sh), scripts/env/, a file that turns the guards on or an unlock file cannot be "
+              "checked. List the paths, check them, then name them; if it is meant, the user runs it with `!`.")
+
+
 def kind_message(kind):
     """The refusal for what kit_word, landing or patch_mentions found."""
     return {"unlock": token_message, "token": token_message, "helpers": helper_message,
-            "config": config_message}[kind]()
+            "config": config_message, "hooks": hooks_message}[kind]()
 
 
 def package_script(head, args, cwd):
@@ -2165,12 +2699,14 @@ def subst_body(word):
     return subs[idx] if 0 <= idx < len(subs) else ""
 
 
-def safe_file_list(body, cwd):
+def safe_file_list(body, cwd, changing=False):
     """Whether a substitution body only lists tracked files that are not .env* files: a
     `git ls-files <pathspec>` or `git diff --name-only …`, possibly piped into line filters
     (head, tail, sort, uniq, cat, tr, cut, sed, grep, wc), whose output holds no .env* name.
     The git command is run read-only to confirm; anything else, or any .env* in the output, is
-    not safe. Keeps the legitimate `cat $(git ls-files '*.md' | head)` case."""
+    not safe. Keeps the legitimate `cat $(git ls-files '*.md' | head)` case. changing: the list
+    goes to a command that changes files, so it may hold no guarded place either (a guard script,
+    scripts/env/, a guard file, an unlock file)."""
     if body is None or unresolved(cwd):
         return False
     stages = [s.strip() for s in re.split(r"\|(?!\|)", body) if s.strip()]
@@ -2198,6 +2734,10 @@ def safe_file_list(body, cwd):
         return False
     filters = {"head", "tail", "sort", "uniq", "cat", "tr", "cut", "sed", "grep", "egrep", "fgrep",
                "wc", "tac", "nl", "awk", "xargs"}
+    if changing:
+        # Only filters that pass names through unchanged: sed, awk, tr or cut could rewrite a
+        # listed name into a guarded one after the check below.
+        filters = {"head", "tail", "sort", "uniq", "cat", "grep", "egrep", "fgrep", "tac"}
     for st in stages[1:]:
         try:
             w = split_words(st)
@@ -2213,7 +2753,18 @@ def safe_file_list(body, cwd):
     if r.returncode != 0:
         return False
     lines = r.stdout.split("\x00") if "-z" in args or "--name-only\x00" in r.stdout else r.stdout.splitlines()
-    return not any(env_name(os.path.basename(x.strip())) for x in lines if x.strip())
+    if any(env_name(os.path.basename(x.strip())) for x in lines if x.strip()):
+        return False
+    if changing:
+        # ls-files prints paths from the folder it runs in, diff --name-only from the repo's top.
+        base = existing(resolve(".", cwd))
+        if sub == "diff" and "--relative" not in args:
+            base = git_out(base, "rev-parse", "--show-toplevel") or base
+        for x in [x.strip() for x in lines if x.strip()]:
+            p = os.path.normpath(os.path.join(base, x))
+            if landing(p) or hooks_area(p) or guard_holder(p):
+                return False
+    return True
 
 
 def literal_value(word, cwd):
@@ -2450,20 +3001,75 @@ def secrets(words, ws, raw, env, redirects, fed, prev, before, xargs, cwd, depth
             kind = extracts_to_tokens(head, args, cwd)
         elif head == "patch" or (head == "git" and git_sub(args)[0] in ("apply", "am")):
             kind = patch_mentions([a for a in args if not a.startswith("-")] + [t for op, t in redirects if op == "<"], cwd)
+            # patch finds its files from the folder it runs in: there a bare name reaches a guarded place.
+            kind = kind or (near_guard(cwd) if head == "patch" else "")
         if kind:
             block(kind_message(kind))
         if risky and "token" in MENTIONS:
             block(token_message())
-    # unlock.sh, scripts/env/ and the guard files: a command that names one may only read it. The
-    # helper a command runs as its script is not counted; whether it may run is decided below.
+    # sed and awk name the files they write and read, and the commands they run, inside their
+    # program: a sed w, W or s///w, r or R, e or s///e; an awk print > or >>, print |, | getline,
+    # getline < or system(). Each is judged as the redirect or command it is; one built at run time,
+    # or a program that cannot be read, is refused.
+    only_reads = False
+    if head in SED_NAMES:
+        found = sed_programs(args, fed + [t for op, t in redirects if op == "<<<"], cwd)
+        texts, strict = found if found is not None else ([], True)
+        parsed = [sed_parse(t) for t in texts]
+        if found is None or texts and ((strict and None in parsed) or all(p is None for p in parsed)):
+            block("[safety] BLOCKED: safety-check cannot read this sed program (a -f file it cannot open, or a script "
+                  "sed would not accept), so what it writes, reads or runs is unknown. Name the program inline; if it "
+                  "is meant, the user runs it with `!`.")
+        for text in texts:
+            # A program that names a guard file is refused apart (config_reader lets sed read one).
+            if GUARD_TEXT.search(text):
+                block(config_message())
+        for p in parsed:
+            for t in p[0] if p else []:
+                judge_write(t, cwd, "this sed program (w, W or s///w)")
+            for t in p[1] if p else []:
+                judge_read(t, cwd, "this sed program (r or R)")
+            for body in p[2] if p else []:
+                if body is None:
+                    block("[safety] BLOCKED: this sed program runs its pattern space as a command (s///e, or e with no "
+                          "command), text safety-check cannot read. If it is meant, the user runs it with `!`.")
+                else:
+                    mentions(body)
+                    analyse(body, cwd, depth + 1, {})
+    if head in AWK_NAMES:
+        programs = awk_programs(args, cwd)
+        found = [awk_io(p) for p in programs or []]
+        if programs is None or any(f is None for f in found):
+            block("[safety] BLOCKED: safety-check cannot read this awk program (a -f file it cannot open, or code it "
+                  "pulls in with -i, -l, @include or @load), so what it writes or runs is unknown. Name the program "
+                  "inline; if it is meant, the user runs it with `!`.")
+        reads_code += [p for p in programs or [] if p not in reads_code]
+        only_reads = bool(found) and all(f and not f[0] and not f[1] for f in found)
+        for writes, runs, sources in [f for f in found if f]:
+            for t in writes:
+                judge_write(t, cwd, "this awk program (print or printf > or >>)")
+            for t in sources:
+                judge_read(t, cwd, "this awk program (getline <)")
+            for body, fed_output in runs:
+                if body is None:
+                    block("[safety] BLOCKED: this awk program runs a command built at run time (system(), print | or "
+                          "| getline), so what it runs is unknown. Run the command directly; if it is meant, the user "
+                          "runs it with `!`.")
+                elif body.strip():
+                    mentions(body)
+                    # print | "cmd" feeds cmd the program's output: a shell reading it runs unread code.
+                    analyse(": | " + body if fed_output else body, cwd, depth + 1, {})
+    # unlock.sh, scripts/env/, the guard files and the guard scripts: a command that names one may
+    # only read it. The helper a command runs as its script is not counted; whether it may run is
+    # decided below.
     looks = (head in LOOKERS or (head == "git" and git_sub(args)[0] in GIT_LOOKS)
              or (head == "find" and not FIND_ACTIONS & set(args)))
-    config_reads = looks or config_reader(head, args)
+    config_reads = looks or config_reader(head, args) or only_reads
     # git -C moves the folder its path operands are read from.
     wd = git_cwd(args, cwd) if head == "git" else cwd
     if not looks:
-        # A copy leaves its source as it was: for scripts/env/ and the guard files only where it
-        # lands counts.
+        # A copy leaves its source as it was: for scripts/env/, the guard files and the guard
+        # scripts only where it lands counts.
         sources = copy_operands(args)[0] if head in COPIERS - {"mv", "ln", "link"} else []
         # Only show.sh, set.sh and envfile.py are privileged; running any other project script under
         # scripts/env/ is an ordinary run, not a change to a helper. The file a command executes (a
@@ -2474,24 +3080,85 @@ def secrets(words, ws, raw, env, redirects, fed, prev, before, xargs, cwd, depth
             if run_name and "/" in run_name and not unresolved(run_name):
                 executed.add(resolve(run_name, run_where))
         for a in args:
+            if re.fullmatch(r"-[A-Za-z0-9-]*", a):
+                continue  # a flag names no file
             kind = kit_word(a, wd, head in PARENT_OPS)
-            if kind in ("helpers", "config") and a in sources:
+            if kind in ("helpers", "config", "hooks") and a in sources:
                 continue
-            if kind == "config" and config_reads:
+            if kind in ("config", "hooks") and config_reads:
                 continue
-            # Running a non-privileged script under scripts/env/ is a normal run, not a change to a
-            # helper. Executing unlock.sh is never exempt: kind == "unlock" still blocks.
-            if kind == "helpers" and not unresolved(a) and resolve(a, wd) in executed:
+            # Running a non-privileged script under scripts/env/, or a hook, is a normal run, not a
+            # change to it. Executing unlock.sh is never exempt: kind == "unlock" still blocks.
+            if kind in ("helpers", "hooks") and not unresolved(a) and resolve(a, wd) in executed:
                 continue
             if kind:
                 block(kind_message(kind))
                 break
-    # A guard file named where the analyzer cannot follow it: a path xargs feeds or one built by
-    # $( ) or a variable; and a sed script that names one (its w command writes, e runs).
-    if not config_reads and "config" in MENTIONS and (xargs or unresolved(cwd) or any(unresolved(a) for a in args)):
-        block(config_message())
-    if head == "sed" and any(GUARD_TEXT.search(t) for t in sed_scripts(args)):
-        block(config_message())
+        # Moving or linking a folder, changing modes under it, or checking it out carries along
+        # every guarded place it holds: the repo itself, .claude, scripts, a plugin's folder.
+        for a in carried_along(head, args, wd):
+            kind = "" if unresolved(a) else guard_holder(resolve(a, wd))
+            if kind:
+                block(kind_message(kind))
+                break
+    # A guarded place named where the analyzer cannot follow it: a path xargs feeds or one built by
+    # $( ) or a variable.
+    if not config_reads and (xargs or unresolved(cwd) or any(unresolved(a) for a in args)):
+        if "config" in MENTIONS:
+            block(config_message())
+        if "hooks" in MENTIONS:
+            block(hooks_message())
+    # A command that changes files, handed paths the analyzer cannot see: from xargs, or built by $( )
+    # or a variable set from one. Copying out stays open: a cp, rsync, install or ln whose sources
+    # arrive that way but whose destination is named. A git listing that names none of the guarded
+    # places (the git-listing allowance) is seen.
+    if changes_files(head, args):
+        copy_like = head in COPIERS - {"mv"}
+        reps = xargs_replacements(words) if xargs else set()
+        operands, dest = copy_operands(args) if copy_like else ([], None)
+        dest_known = dest is not None and not unresolved(dest) and not any(r in dest for r in reps)
+        if xargs and not (copy_like and dest_known):
+            block(FED_CHANGE)
+        # A sed, perl or ruby program is code, not a path.
+        found = sed_programs(args, [], cwd) if head in SED_NAMES else None
+        code = set(found[0] if found else [])
+        code |= {args[k + 1] for k, a in enumerate(args[:-1])
+                 if a in ("-e", "--expression") or re.fullmatch(r"-[A-Za-z]*[eE]", a)}
+        paths = carried_along(head, args, cwd) if head == "git" else [a for a in args if a not in code]
+        for a in paths:
+            if "__SUBST" not in a and not any(refers(name, a) for name in TAINTED):
+                continue
+            if copy_like and dest_known and a != dest:
+                continue
+            body = subst_body(a)
+            if body is not None and safe_file_list(body, cwd, changing=True):
+                continue
+            block(FED_CHANGE)
+            break
+    # find -exec or -execdir running a command that changes files, over a tree that holds a guarded
+    # place: the files it reaches there are unknown. Shells and interpreters are carried below.
+    if head == "find":
+        roots = []
+        for a in args:
+            if a.startswith("-") or a in ("!", "(", "__ESCAPED__"):
+                break
+            roots.append(a)
+        k = 0
+        while k < len(args):
+            if args[k] in ("-exec", "-execdir", "-ok", "-okdir"):
+                j = k + 1
+                while j < len(args) and args[j] not in (";", "+", "\\;"):
+                    j += 1
+                seg = peel(args[k + 1:j])[0]
+                if seg and changes_files(seg[0], seg[1:]):
+                    for r in roots or ["."]:
+                        p = None if unresolved(r, glob=True) else resolve(r, cwd)
+                        kind = "" if p is None else guard_holder(p) or landing(p) or ("hooks" if hooks_area(p) else "")
+                        if p is None or kind:
+                            block(kind_message(kind) if kind else FED_CHANGE)
+                            break
+                k = j
+            k += 1
     if (head in SHELLS or head in ("source", ".")) and unknown_script(ws, xargs):
         block("[safety] BLOCKED: this runs a script whose file safety-check cannot name (from $( ), a variable, "
               "find's {} or xargs), so it cannot tell it apart from scripts/ops/unlock.sh, which only the user runs. "
@@ -2544,6 +3211,23 @@ def secrets(words, ws, raw, env, redirects, fed, prev, before, xargs, cwd, depth
             block(helper_message())
         if GUARD_TEXT.search(text):
             block(config_message())
+        if hooks_text(text):
+            block(hooks_message())
+    # Inline code (python -c, node -e, a heredoc fed to perl, ...) that changes or deletes a file or
+    # runs a command: which file it reaches cannot be read from its text, since a name can be built
+    # or relative to a folder the code picks. awk is read above instead.
+    interp = next((os.path.basename(w) for w in ws if INTERPRETER.fullmatch(os.path.basename(w))), "")
+    if reads_code and not interp.endswith("awk"):
+        kind = near_guard(cwd)
+        if kind:
+            block(kind_message(kind))
+        for text in reads_code:
+            if INLINE_CHANGE.search(text) or (interp in ("perl", "ruby") and "`" in text):
+                block("[safety] BLOCKED: this inline code changes, moves or deletes a file or runs a command, so "
+                      "whether it reaches a guard script, scripts/env/, a guard file, an unlock file or a .env* file "
+                      "cannot be read from its text. Use the shell command for it (rm, mv, git ...), which "
+                      "safety-check can read, or the Edit tool; if it is meant, the user runs it with `!`.")
+                break
 
     # .env* files: only the two helper scripts open them, set.sh only while env is unlocked.
     if runner == "set.sh" and not unlock_until(ROOT, "env"):
@@ -2844,6 +3528,8 @@ def plain_text_rules(text, cwd):
         block(helper_message())
     if "config" in MENTIONS:
         block(config_message())
+    if "hooks" in MENTIONS:
+        block(hooks_message())
 
 
 def reads_stdin(args):
@@ -2854,6 +3540,17 @@ def reads_stdin(args):
         if SHELL_C.match(a) or not a.startswith(("-", "+")):
             return False
     return True
+
+
+def taint(name, value):
+    """Records whether a variable now holds text from a $( ) the analyzer could not compute (or from
+    another such variable); mktemp's new path is not counted."""
+    bodies = [subst_body(m) for m in re.findall(r"__SUBST[0-9]+__", value)]
+    if (any(b is None or not re.match(r"\s*mktemp(\s|$)", b) for b in bodies)
+            or any(refers(other, value) for other in TAINTED)):
+        TAINTED.add(name)
+    else:
+        TAINTED.discard(name)
 
 
 def refers(name, word):
@@ -2872,12 +3569,13 @@ def run(words, redirects, before, prev, docs, cwd, depth, scope, loops, aliases,
             block(env_message(name))
         if op != "<" and token_word(t, cwd, False):
             block(token_message())
-        kind = kit_word(t, cwd) if op != "<" else ""
+        kind = kit_word(t, cwd, path=True) if op != "<" else ""
         if kind:
             block(kind_message(kind))
-        # A write whose target is built by a substitution the analyzer cannot compute: where it
-        # lands is unknown, and it could be a .env* file or a token, so it is refused.
-        if op not in ("<", "<<<") and "__SUBST" in t:
+        # A write whose target is built by a substitution the analyzer cannot compute (or by a
+        # variable set from one): where it lands is unknown, and it could be a .env* file, a token
+        # or a guard script, so it is refused.
+        if op not in ("<", "<<<") and ("__SUBST" in t or any(refers(n, t) for n in TAINTED)):
             block("[safety] BLOCKED: this writes to a file whose name is built by $( ) or `...`, so safety-check "
                   "cannot tell whether it is a .env* file or an unlock token. Write to a named path; if it is "
                   "really meant, the user runs it themselves with `!`.")
@@ -2890,6 +3588,7 @@ def run(words, redirects, before, prev, docs, cwd, depth, scope, loops, aliases,
             v = resolve_substs(v, cwd)
             if k in COMMAND_VARS:
                 EXPORTED[k] = v  # usually exported already, so the new value reaches every later tool
+            taint(k, v)
             if re.search(r"[$`]|__SUBST|__ARITH|__HEREDOC", v):
                 scope.pop(k, None)
             else:
@@ -2917,6 +3616,7 @@ def run(words, redirects, before, prev, docs, cwd, depth, scope, loops, aliases,
                 continue
             if eq:
                 value = resolve_substs(value, cwd)
+                taint(name, value)
                 if re.search(r"[$`]|__SUBST|__ARITH|__HEREDOC", value):
                     scope.pop(name, None)
                 else:
@@ -3125,5 +3825,6 @@ analyze_command() {
   printf '%s' "$1" | PYTHONIOENCODING=utf-8:surrogateescape \
     HOOK_CWD="${2:-$PWD}" HOOK_ROOT="${ROOT:-$PWD}" HOOK_MODE="${HOOK_MODE:-check}" HOOK_DEFAULTS="$HOOK_DEFAULTS" \
     HOOK_SESSION="$session" HOOK_TOOL_USE_ID="$tool_use" HOOK_STATE="$(hook_state_dir)" \
-    HOOK_OPTIN="$(hook_optin_file)" run_capped "$(hook_cap 8)" python3 -c "$HOOK_PY_PRELUDE"$'\n'"$HOOK_ANALYZER"
+    HOOK_OPTIN="$(hook_optin_file)" HOOK_LIB_DIR="$HOOK_LIB_DIR" \
+    run_capped "$(hook_cap 8)" python3 -c "$HOOK_PY_PRELUDE"$'\n'"$HOOK_ANALYZER"
 }

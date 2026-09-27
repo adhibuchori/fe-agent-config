@@ -153,8 +153,8 @@ An optional hook is wired with one more PreToolUse entry. Wire only the hooks th
   unlocks, with `!` (`docs/unlock.md`). The routes the analyzer does not see are listed under
   "What it does not catch".
 - **Changing `scripts/env/` or `unlock.sh` from the shell**: they may be read (`cat`, `grep`,
-  `git diff`, `shellcheck`) and copied out, not edited, replaced, moved or deleted. The Edit tool
-  asks the user first.
+  `git diff`, `shellcheck`) and `scripts/env/` copied out, not edited, replaced, moved or deleted,
+  by any of the routes below. The Edit tool asks the user first.
 - **Changing the files that turn the guards on from the shell**: `.claude/settings.json`,
   `.claude/settings.local.json`, `.claude/agent-config.json` and `.claude/agent-config-kit.lock`,
   in this repo or any other checkout, and under the plugin its record of the projects that opted
@@ -162,6 +162,37 @@ An optional hook is wired with one more PreToolUse entry. Wire only the hooks th
   may not delete, move, link, overwrite, truncate or edit them in place, by any route the analyzer
   can follow. Change them with the Edit tool, which asks first. A fixture under a temp folder is
   not one of them.
+- **Changing the guard scripts from the shell**: the hooks in `.claude/hooks/` (in this repo, in
+  another checkout, and in the `.claude` folder of your home), and under the plugin its own
+  `scripts/` and `hooks/` folders and the plugins Claude Code installed under `.claude/plugins/` in
+  your home; `scripts/check/hook-probes.*`, which prove them; and `scripts/ops/unlock.sh`. The shell
+  may read them (`cat`, `sed -n`, `awk` without an output redirect, `shellcheck`, `git diff`), run
+  and copy out the hooks and probes (`bash -n`, `bash scripts/check/hook-probes.sh`,
+  `cp .claude/hooks/lib.sh /tmp/`), and stage or unstage them (`git add`, `git rm --cached`,
+  `git restore --staged`). It may not delete, move, link, overwrite, truncate, `chmod`, edit in
+  place (`sed -i`, `perl -i`) or check out over them (`git rm`, `checkout`, `restore`, `stash`,
+  `mv`), and it may not move, link, `chmod` or check out a folder that holds them (`.claude`,
+  `scripts`, `scripts/check`, the repo, the folder of the plugin). A fixture under a temp folder is
+  not one of them. See "Why `!`" below.
+- **Every route to these files counts**, for `.env*` files, `.claude/state/unlock/`, `scripts/env/`,
+  the guard files and the guard scripts alike: a redirect; `sed -i`, `perl -i` and `ruby -i`; a
+  program that names a file inside its own code, judged as the redirect or command it is (`sed`:
+  `w`, `W` and `s///w` write, `r` and `R` read, `e` and `s///e` run a command; `awk`: `print >` and
+  `>>` write, `getline <` reads, `print |`, `| getline` and `system()` run a command); and inline
+  interpreter code (`python -c`, `node -e`, `bun -e`, `perl -e`, a heredoc fed to one), refused when
+  it changes, moves or deletes a file or runs a command, when it names one of these places (spelled
+  in pieces too), or when it runs inside a folder that holds one (`cd .claude && python3 -c …`). A
+  `sed` or `awk` program whose target or command is only known at run time (`print > f`,
+  `system(cmd)`), or that the analyzer cannot read (an unknown command, a `-f` file it cannot open,
+  `@include` in gawk), is refused.
+- **Paths a command changes but the analyzer cannot see**: `rm`, `mv`, `cp`, `ln`, `chmod`,
+  `truncate`, `tee`, `sed -i`, `perl -i` or a working-tree `git` command handed its paths by
+  `xargs`, by `$( )`, or by a variable set from one (`f=$(find …); rm "$f"`), and `find -exec`
+  running such a command over a tree that holds one of these places. Copying out with a named
+  destination stays open (`… | xargs cp -t /tmp/backup/`), `$(mktemp)` is known to be new, and a
+  literal `git ls-files` or `git diff --name-only` that names none of these places, filtered at most
+  by `grep`, `head`, `tail`, `sort`, `uniq`, `cat` or `tac`, is seen: `rm $(git ls-files "*.orig")`
+  still works.
 - **Git settings that change what git runs, which config it loads, where it connects or where it
   works**, whatever their value: `-c`, `--config-env`, `GIT_CONFIG_PARAMETERS` or
   `GIT_CONFIG_KEY_n` setting an alias (`alias.*`), an include (`include.path`,
@@ -201,7 +232,9 @@ guard reaches its 9 s deadline. A command it
 cannot resolve is refused rather than guessed: a command name built by `$( )`, a file operand of a
 reader it cannot name, decoded or computed code run by a shell or `eval`, code a shell or
 interpreter reads from a pipe it cannot read, a script it cannot name, inline interpreter code that
-opens a file, and the package-runner and git-setting forms above. Each refusal says why; when the
+opens, changes or deletes a file or runs a command, a `sed` or `awk` program it cannot read or whose
+file or command is built at run time, paths handed to a command that changes files by `xargs` or
+`$( )`, and the package-runner and git-setting forms above. Each refusal says why; when the
 command is really meant, the user runs it with `!`, which runs as the user, outside the hooks and
 the sandbox, with the user's own access (see "The sandbox layer" for the one exception).
 
@@ -209,7 +242,8 @@ the sandbox, with the user's own access (see "The sandbox layer" for the one exc
 it: pushes to protected branches; recursive deletes of protected paths, the repo, a parent or the
 home folder; a hard reset, a forced `clean`, `--no-verify` and `HUSKY=0`; any real `.env*` name
 (reads, writes, copies and `source` alike); the unlock script, its package alias or its folder;
-any mention of `scripts/env/`; and any mention of a file that turns the guards on. Everything else,
+any mention of `scripts/env/`; any mention of a file that turns the guards on; and any mention of a
+guard script (`.claude/hooks/`, `.claude/plugins/`, `hook-probes`). Everything else,
 a wrapper or package runner around any other command included, runs unchecked on such a machine:
 install python3. The analyzer keeps the same rules for a command it cannot tokenise even after
 closing a stray quote.
@@ -228,8 +262,13 @@ instructions hidden in files Claude reads, not a security boundary:
   own file. Add a wrapper you use to `commandWrappers`.
 - **The app reads `.env*` when it runs.** A server, test run or build loads the values it needs;
   the hooks refuse the obvious ways to print them, but a program's own output can still show one.
-- **The hooks are files in the repo.** A change to them changes what they refuse; review changes
-  under `.claude/` like any other code.
+- **The Edit tool can change the hooks.** The shell cannot (above), but a file edit is how code
+  changes, so a hook edit shows as a diff instead, and `.claude/settings.json` asks you before each
+  one (`Edit(.claude/hooks/**)`, `Edit(scripts/check/hook-probes.*)`); review changes under
+  `.claude/` like any other code.
+- **Inline code that hides both what it calls and what it reaches**, such as
+  `getattr(__import__('o' + 's'), …)` on a name spelled in pieces and run outside the guarded
+  folders, is judged by its text and can pass. The sandbox and review are the layers below it.
 - **Without python3** only the plain-text rules above run.
 
 The sandbox below closes the gaps that matter most (reading `.env*`, forging an unlock) for every
@@ -241,9 +280,9 @@ process, whatever the command line says.
 ([docs](https://code.claude.com/docs/en/sandboxing)) by default (`sandbox.enabled: true`). The
 operating system then enforces, for every command Claude runs and its child processes: no read of a
 real `.env*` file or of `set.sh`'s backups (`sandbox.filesystem.denyRead`, with `allowRead`
-re-opening the `*.example` templates), and no write under `.claude/state/unlock/`
-(`sandbox.filesystem.denyWrite`). Only `scripts/env/show.sh` and `scripts/env/set.sh` run outside it
-(`sandbox.excludedCommands`).
+re-opening the `*.example` templates), and no write under `.claude/state/unlock/` or
+`.claude/hooks/`, nor to `scripts/ops/unlock.sh` (`sandbox.filesystem.denyWrite`). Only
+`scripts/env/show.sh` and `scripts/env/set.sh` run outside it (`sandbox.excludedCommands`).
 
 - **Platforms**: macOS (built in), Linux and WSL2 (with `bubblewrap` and `socat` installed). Not
   WSL1 or native Windows. Where it cannot start, Claude Code warns and runs commands without it
@@ -260,6 +299,13 @@ re-opening the `*.example` templates), and no write under `.claude/state/unlock/
 **No hook reads permission from the prompt.** A refused command stays refused whoever asks; the
 user runs it themselves with `!`. Never widen `settings.json` or `agent-config.json` to get past a
 refusal.
+
+**Why `!` for the guard scripts.** A guard the agent can rewrite guards nothing: one instruction
+hidden in a file Claude reads could delete the check that would have stopped it, and the next
+command would pass. So no shell route changes a hook, a probe, a guard file, `scripts/env/` or the
+unlock script, and the refusal says so. A deliberate change is made with the Edit tool, where you
+see the diff, or typed by you with `!` (`! git checkout -- .claude/hooks/lib.sh`), which runs as
+you, outside the hooks. Security over convenience: when in doubt, the hook hands the command to you.
 
 ## Configuration
 

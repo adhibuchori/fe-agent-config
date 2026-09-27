@@ -67,12 +67,20 @@ does not stop" lists the ones they cannot); the sandbox refuses any write to tho
 you start with `!` runs as you, with your own access, outside Claude's hooks and (in an ordinary
 session) outside the sandbox, so it is the one way in. Asking in the chat does not unlock anything.
 
+The same holds for the guards themselves. A hook the agent could rewrite would guard nothing: one
+instruction hidden in a file Claude reads could delete the check that would have stopped it. So
+Claude's shell never changes a hook, the probes that prove them, the unlock script, `scripts/env/`
+or the files that turn the guards on. When such a change is meant, Claude makes it with the Edit
+tool, where you see the diff, or you run the command yourself with `!`
+(`! git checkout -- .claude/hooks/lib.sh`).
+
 ## What is locked, exactly
 
 - **`.env*` files.** Claude's own file tools may not open or edit them (the repo's
   `.claude/settings.json` denies `Read(.env*)` and `Edit(.env*)`, templates excepted). The hooks
-  refuse the shell commands that read or write one: `cat`, `grep`, `sed`, `diff`, `source`,
-  redirects, copies, a `python -c` or `node -e` that opens one, and the same inside a wrapper
+  refuse the shell commands that read or write one: `cat`, `grep`, `sed` (a `r` or `w` in its
+  program too), `awk` (`print >`, `getline <`), `diff`, `source`, redirects, copies, a `python -c`
+  or `node -e` that opens one, and the same inside a wrapper
   (`timeout`, `sudo`, `env`, ...) or a package runner (`npx`, `bun exec`, `pnpm exec`, ...). A
   recursive `grep` over a folder that holds one is refused unless it leaves `.env*` out
   (`--exclude='.env*'`). So is inline code that prints what a loader took from one, such as
@@ -96,14 +104,24 @@ session) outside the sandbox, so it is the one way in. Asking in the chat does n
   a git setting that changes what git runs or loads (an alias, an include, `core.sshCommand`,
   `core.fsmonitor`, a credential helper, `protocol.*.allow`, a proxy, `url.*.insteadOf`, ...),
   set with `-c` or written with `git config`, whatever its value; inline interpreter
-  code that opens, lists or builds a path to a file; a copy, move, link or archive landing on
-  `.claude/state/` or a `.env*` file; and `xargs` feeding a file reader from a pipeline. Over-
-  refusal is the point: when in doubt it stops and hands the command to you.
+  code that opens, lists or builds a path to a file, changes, moves or deletes one, or runs a
+  command; a `sed` or `awk` program whose file or command is only known at run time, or that it
+  cannot read; a copy, move, link or archive landing on `.claude/state/` or a `.env*` file;
+  `xargs` feeding a file reader from a pipeline; and a command that changes files (`rm`, `mv`,
+  `chmod`, `sed -i`, `git checkout`, ...) handed its paths by `xargs`, `$( )` or `find -exec`.
+  Over-refusal is the point: when in doubt it stops and hands the command to you.
 - **The two helper scripts** are the exceptions: `show.sh` always, and `set.sh` only while `env` is
   open. `set.sh` keeps every other line and comment, backs the old file up to
   `.claude/state/env-backups/` (the backups are locked like the files) and logs the key name,
   never the value. Claude's shell may read `scripts/env/` but not change it; a change to it goes
   through the Edit tool, which asks you first.
+- **The guard scripts.** The hooks in `.claude/hooks/` (installed as a plugin: the plugin's own
+  `scripts/` and `hooks/`, and the plugins in `~/.claude/plugins/`), `scripts/check/hook-probes.*`,
+  which prove them, and `scripts/ops/unlock.sh`. Claude's shell may read them, and run and copy out
+  the hooks and probes; it may not delete, move, link, overwrite, truncate, `chmod`, edit in place
+  (`sed -i`, `perl -i`, a `sed` `w`, an `awk` `print >`, inline code) or check out over them
+  (`git rm`, `checkout`, `restore`, `stash`, `mv`), nor do the same to a folder that holds them.
+  A change goes through the Edit tool or your own `!`.
 - **Production writes.** `.claude/hooks/db-guard.sh` checks each call to the production SQL tool
   (`mcp__db-prod__execute_sql`, or `dbWriteGuard.toolPattern` in `.claude/agent-config.json`).
   Anything but one read-only statement waits for `db`: a write, several statements, `SET ROLE`,
@@ -148,11 +166,13 @@ but they read text, so honest limits remain:
   named script's contents are the code's own review surface. The same holds for a config file
   Claude writes and git then reads (`.git/config`, an `include.path` file): its settings are
   not parsed.
-- **The hooks are files in the repo.** Claude's Bash could change them, and a change there would
-  change what they refuse. `.claude/settings.json` asks before `Edit(scripts/env/**)` and the
-  unlock script, and the analyzer refuses shell changes to the helper files and to the files that
-  turn the guards on (`.claude/settings.json`, `settings.local.json`, `agent-config.json`,
-  `agent-config-kit.lock`); still, review changes under `.claude/` like any other code.
+- **The hooks are files in the repo.** The analyzer refuses every shell change it can read to the
+  hooks, the probes, the unlock script, the helper files and the files that turn the guards on
+  (`.claude/settings.json`, `settings.local.json`, `agent-config.json`,
+  `agent-config-kit.lock`), and `.claude/settings.json` asks before `Edit(.claude/hooks/**)`,
+  `Edit(scripts/check/hook-probes.*)`, `Edit(scripts/env/**)` and the unlock script. The Edit tool
+  can still change a hook once you say yes, and inline code that hides both what it calls and the
+  name it reaches can pass the text check; review changes under `.claude/` like any other code.
 - **A write-enabled production server** turns a SQL function of your own that writes into something
   that reads like a query, so it can pass without `unlock db`. The read-only server mode
   (`--access-mode=restricted`) is the layer below that stops it.
@@ -167,7 +187,8 @@ hooks read, `.claude/settings.json` turns on
   included, at any depth) and the backups in `.claude/state/env-backups/`, with `allowRead`
   re-opening `*.example` templates only.
 - **`sandbox.filesystem.denyWrite`** blocks writes under `.claude/state/unlock/`, so no sandboxed
-  command can forge a token even by a route the analyzer never saw.
+  command can forge a token even by a route the analyzer never saw, and under `.claude/hooks/` and
+  to `scripts/ops/unlock.sh`, so none can rewrite a guard either.
 - **`sandbox.excludedCommands`** excludes only `scripts/env/show.sh` and `scripts/env/set.sh`, the
   two helpers that must reach `.env` files; everything else runs inside the boundary.
 

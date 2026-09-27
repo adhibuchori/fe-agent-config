@@ -210,6 +210,8 @@ write("tokenread", "ls .claude/state/unlock/")
 write("helperrun", "bash scripts/env/show.sh .env")
 write("envfilepy", "python3 scripts/env/envfile.py show .env")
 write("configwrite", "rm -f .claude/agent-config-kit.lock")
+write("hookswrite", "echo 'exit 0' > .claude/hooks/safety-check.sh")
+write("probeswrite", "sed -i '' /rm/d scripts/check/hook-probes.tsv")
 PY
 feed() {
   local expect="$1" name="$2" out code t0
@@ -274,6 +276,9 @@ for kit in nopy nojson; do
   feed block envfilepy PATH="$TMP/$kit"
   # Any mention of a file that turns the guards on: unparsed, a read cannot be told from a change.
   feed block configwrite PATH="$TMP/$kit"
+  # The same for the guard scripts themselves.
+  feed block hookswrite PATH="$TMP/$kit"
+  feed block probeswrite PATH="$TMP/$kit"
 done
 feed warn plain PATH="$TMP/nopy"
 # No jq: python3 reads the payload and the full analyzer runs.
@@ -310,6 +315,38 @@ HPW="$(git -C "$PW" rev-parse --path-format=absolute --git-path hooks)"
 sc allow "$PW" "git -c core.hooksPath=$HPW commit -m x" CLAUDE_PROJECT_DIR="$PW"
 sc block "$PW" "git -c core.hooksPath=.git/hooks commit -m x" CLAUDE_PROJECT_DIR="$PW"
 sc block "$PW" "git -c core.hooksPath=/dev/null commit -m x" CLAUDE_PROJECT_DIR="$PW"
+
+# 1b-2. The guard scripts by the path they run from (wherever the hooks are installed), and the
+# routes the table cannot build in its fixture: a copied tree, an archive or a patch that lands on
+# a guard script, and sed or awk program files that write one.
+sc block "$P" "echo 'exit 0' >> $HOOKS/lib.sh"
+sc block "$P" "sed -i.bak s/2/0/ $HOOKS/safety-check.sh"
+sc block "$P" "cd $HOOKS && rm lib.sh"
+sc allow "$P" "cat $HOOKS/lib.sh"
+sc allow "$P" "cp $HOOKS/lib.sh $TMP/lib-copy.sh"
+sc allow "$P" "bash -n $HOOKS/safety-check.sh"
+mkdir -p "$TMP/forged-hooks/.claude/hooks" "$TMP/forged-hooks/scripts/check" "$TMP/forged-hooks/scripts/ops"
+echo 'exit 0' >"$TMP/forged-hooks/.claude/hooks/safety-check.sh"
+echo 'allow	-	rm -rf src' >"$TMP/forged-hooks/scripts/check/hook-probes.tsv"
+echo 'exit 0' >"$TMP/forged-hooks/scripts/ops/unlock.sh"
+tar -cf "$TMP/hooks.tar" -C "$TMP/forged-hooks" .claude
+printf -- '--- a/.claude/hooks/lib.sh\n+++ b/.claude/hooks/lib.sh\n@@ -1 +1 @@\n-a\n+b\n' >"$TMP/hooks.diff"
+printf -- '--- a/scripts/ops/unlock.sh\n+++ b/scripts/ops/unlock.sh\n@@ -1 +1 @@\n-a\n+b\n' >"$TMP/unlock.diff"
+printf 'w scripts/env/show.sh\n' >"$TMP/w.sed" && printf 's/a/b/\n' >"$TMP/ok.sed"
+# shellcheck disable=SC2016 # $1 is awk's field, not the shell's
+printf '{ print > "scripts/check/hook-probes.tsv" }\n' >"$TMP/w.awk" && printf '{ print $1 }\n' >"$TMP/ok.awk"
+sc block "$P" "cp -r $TMP/forged-hooks/.claude ."
+sc block "$P" "cp -r $TMP/forged-hooks/scripts ."
+sc block "$P" "cp -r $TMP/forged-hooks/scripts/ops scripts/"
+sc block "$P" "cp -r $TMP/forged-hooks/.claude \"\$DEST\""
+sc block "$P" "tar -xf $TMP/hooks.tar"
+sc block "$P" "git apply $TMP/hooks.diff"
+sc block "$P" "patch -p1 < $TMP/unlock.diff"
+sc block "$P" "sed -f $TMP/w.sed notes/keep.txt"
+sc block "$P" "awk -f $TMP/w.awk notes/keep.txt"
+sc allow "$P" "sed -f $TMP/ok.sed notes/keep.txt"
+sc allow "$P" "awk -f $TMP/ok.awk notes/keep.txt"
+sc allow "$P" "cp -r $TMP/forged-hooks/.claude/hooks $TMP/hooks-copy"
 
 # 1c. .claude/agent-config.json: each key replaces its default, and a broken file keeps the defaults.
 C="$TMP/configured"
@@ -971,6 +1008,22 @@ run_hook quiet safety-check.sh "plugin, never recorded: push" "$PB" "${PLUGIN[@]
 run_hook block safety-check.sh "plugin: rm the opt-in record" "$(bash_json "$PG" "rm $PD/opted-in-projects")" "${STICKY[@]}"
 run_hook block safety-check.sh "plugin: move the data folder" "$(bash_json "$PG" "mv $PD $TMP/elsewhere")" "${STICKY[@]}"
 run_hook allow safety-check.sh "plugin: read the opt-in record" "$(bash_json "$PG" "cat $PD/opted-in-projects")" "${STICKY[@]}"
+# As a plugin, the plugin's own scripts/ and hooks/ are guard scripts wherever the plugin lives; the
+# same folders are nothing special to a template copy (no CLAUDE_PLUGIN_ROOT).
+FP="$TMP/fake-plugin"
+mkdir -p "$FP/scripts" "$FP/hooks" && echo 'exit 0' >"$FP/scripts/guard.sh" && echo '{}' >"$FP/hooks/hooks.json"
+touch "$PG/.claude/agent-config-kit.lock"
+FPLUG=(CLAUDE_PLUGIN_ROOT="$FP" CLAUDE_PROJECT_DIR="$PG")
+run_hook block safety-check.sh "plugin: write its scripts" "$(bash_json "$PG" "echo x >> $FP/scripts/guard.sh")" "${FPLUG[@]}"
+run_hook block safety-check.sh "plugin: rm its hooks.json" "$(bash_json "$PG" "rm $FP/hooks/hooks.json")" "${FPLUG[@]}"
+run_hook block safety-check.sh "plugin: sed w into its scripts" "$(bash_json "$PG" "sed -n 'w $FP/scripts/guard.sh' notes/keep.txt")" "${FPLUG[@]}"
+run_hook block safety-check.sh "plugin: move the plugin" "$(bash_json "$PG" "mv $FP $TMP/fake-plugin-off")" "${FPLUG[@]}"
+# shellcheck disable=SC2016 # the variable is the probed command's, left for the hook to read
+run_hook block safety-check.sh "plugin: rm by variable" "$(bash_json "$PG" 'rm "$CLAUDE_PLUGIN_ROOT/scripts/guard.sh"')" "${FPLUG[@]}"
+run_hook allow safety-check.sh "plugin: read its scripts" "$(bash_json "$PG" "cat $FP/scripts/guard.sh")" "${FPLUG[@]}"
+run_hook allow safety-check.sh "plugin: copy its scripts out" "$(bash_json "$PG" "cp $FP/scripts/guard.sh $TMP/guard-copy.sh")" "${FPLUG[@]}"
+run_hook allow safety-check.sh "template: the same folder is a temp fixture" "$(bash_json "$PG" "echo x >> $FP/scripts/guard.sh")" CLAUDE_PROJECT_DIR="$PG"
+rm "$PG/.claude/agent-config-kit.lock"
 
 # 11. db-guard.sh: read-only SQL passes; SQL that may write runs only while the user has unlocked db.
 # $1 dir, $2 target, $3 seconds until it ends (default 600): a token as scripts/ops/unlock.sh writes it.

@@ -471,6 +471,7 @@ block	-	echo '{}' > .claude/settings.local.json
 block	-	: > .claude/agent-config.json
 block	-	truncate -s 0 .claude/settings.json
 block	-	sed -i '' 's/a/b/' .claude/settings.json
+block	-	sed -i.bak 's/a/b/' .claude/settings.json
 block	-	tee .claude/agent-config.json < notes/keep.txt
 block	-	chmod 000 .claude/agent-config-kit.lock
 block	-	git rm .claude/agent-config-kit.lock
@@ -494,6 +495,194 @@ allow	-	git restore --staged .claude/settings.json
 allow	-	echo '{}' > .vscode/settings.json
 allow	-	mkdir -p @TMP@/fixture-x/.claude && echo '{}' > @TMP@/fixture-x/.claude/settings.json
 allow	-	git commit -m 'docs: explain .claude/settings.json'
+# The guard scripts: the hooks in any .claude/hooks/ (as a plugin, the plugin's scripts/ and hooks/,
+# and the plugins in ~/.claude/plugins/), and scripts/check/hook-probes.* that prove them. The shell
+# reads, runs and copies them out; it never writes, truncates, copies over, moves, links, chmods,
+# deletes or checks out over them. A temp fixture is not one.
+block	-	rm .claude/hooks/safety-check.sh
+block	-	rm -f .claude/hooks/lib.sh
+block	-	mv .claude/hooks/lib.sh notes/
+block	-	mv .claude/hooks .claude/hooks-off
+block	-	ln -sf /dev/null .claude/hooks/safety-check.sh
+block	-	ln -s .claude/hooks notes/h
+block	-	cp notes/keep.txt .claude/hooks/lib.sh
+block	-	cp notes/keep.txt .claude/hooks/
+block	-	install -m 755 notes/keep.txt .claude/hooks/safety-check.sh
+block	-	echo 'exit 0' > .claude/hooks/safety-check.sh
+block	-	printf 'exit 0\n' >> .claude/hooks/lib.sh
+block	-	: > .claude/hooks/lib.sh
+block	-	truncate -s 0 .claude/hooks/lib.sh
+block	-	dd if=/dev/null of=.claude/hooks/lib.sh
+block	-	tee .claude/hooks/lib.sh < notes/keep.txt
+block	-	echo x | tee -a .claude/hooks/lib.sh
+block	-	sed -i '' 's/exit 2/exit 0/' .claude/hooks/lib.sh
+block	-	sed -i.bak 's/exit 2/exit 0/' .claude/hooks/lib.sh
+block	-	perl -pi -e 's/exit 2/exit 0/' .claude/hooks/lib.sh
+block	-	chmod 000 .claude/hooks/safety-check.sh
+block	-	chmod -x .claude/hooks/*.sh
+block	-	chmod -R 000 .claude
+block	-	git rm .claude/hooks/lib.sh
+block	-	git rm -r .claude/hooks
+block	-	git mv .claude/hooks/lib.sh notes/lib.sh
+block	-	git checkout HEAD -- .claude/hooks/lib.sh
+block	-	git checkout HEAD~1 .claude/hooks
+block	-	git checkout HEAD -- .claude
+block	-	git restore .claude/hooks/lib.sh
+block	-	git restore --source HEAD~1 -- .claude
+block	-	git stash push -- .claude/hooks
+block	-	cd .claude/hooks && rm lib.sh
+block	-	cd .claude/hooks && sed -i '' 's/a/b/' lib.sh
+block	-	echo .claude/hooks/lib.sh | xargs rm
+block	-	rm ~/.claude/hooks/guard.sh
+block	-	rm ~/.claude/plugins/cache/kit/agent-core/1.0.0/scripts/lib.sh
+block	-	echo x > scripts/check/hook-probes.tsv
+block	-	echo 'allow	-	rm -rf src' >> scripts/check/hook-probes.tsv
+block	-	sed -i '' '/rm -rf/d' scripts/check/hook-probes.tsv
+block	-	rm scripts/check/hook-probes.sh
+block	-	cp notes/keep.txt scripts/check/hook-probes.sh
+block	-	git checkout HEAD -- scripts/check/hook-probes.sh
+block	-	mv scripts/check notes/check
+block	-	cp -r @TMP@/plain-tree .claude/hooks
+block	-	echo x > ".claude/hooks/new hook.sh"
+block	-	rm -f "$D/.claude/hooks/lib.sh"
+block	-	python3 -c "getattr(__import__('o' + 's'), 'remo' + 've')('.claude/hooks/lib.sh')"
+block	-	cd .claude && python3 -c "getattr(__import__('o' + 's'), 'remo' + 've')('settings.json')"
+allow	-	cd .claude/hooks && bash -n lib.sh
+allow	-	cat .claude/hooks/lib.sh
+allow	-	sed -n 1,40p .claude/hooks/safety-check.sh
+allow	-	awk 'NR <= 3' .claude/hooks/lib.sh
+allow	-	grep -n hook_start .claude/hooks/*.sh
+allow	-	head -5 scripts/check/hook-probes.tsv
+allow	-	wc -l .claude/hooks/*.sh scripts/check/hook-probes.tsv
+allow	-	shellcheck -x .claude/hooks/*.sh scripts/check/hook-probes.sh
+allow	-	bash -n .claude/hooks/lib.sh
+allow	-	for f in .claude/hooks/*.sh; do bash -n "$f"; done
+allow	-	echo '{}' | bash .claude/hooks/safety-check.sh
+allow	-	bash scripts/check/hook-probes.sh
+allow	-	HOOKS_DIR=.claude/hooks bash scripts/check/hook-probes.sh
+allow	-	ls -la .claude/hooks
+allow	-	find .claude/hooks -name '*.sh'
+allow	-	diff .claude/hooks/lib.sh @TMP@/lib.sh
+allow	-	git diff .claude/hooks
+allow	-	git log -p -- .claude/hooks/lib.sh scripts/check/hook-probes.tsv
+allow	-	git add .claude/hooks scripts/check/hook-probes.tsv
+allow	-	git commit -m 'fix(hooks): .claude/hooks/lib.sh reads the payload once'
+allow	-	git rm --cached .claude/hooks/lib.sh
+allow	-	git restore --staged .claude/hooks/lib.sh
+allow	-	cp .claude/hooks/lib.sh notes/lib.backup.sh
+allow	-	cp -r .claude/hooks @TMP@/hooks-copy
+allow	-	rsync -a .claude/hooks/ @TMP@/hooks-rsync/
+allow	-	git show HEAD:.claude/hooks/lib.sh > @TMP@/lib-head.sh
+allow	-	mkdir -p @TMP@/fixture-h/.claude/hooks && echo x > @TMP@/fixture-h/.claude/hooks/x.sh
+allow	-	chmod +x scripts/check/gates.sh
+allow	-	cd scripts/check && ls
+# Programs that name the files they write, read or run inside their own code: sed (w, W, s///w,
+# r, R, e, s///e, -f), awk (print > and >>, print |, | getline, getline <, system()), perl, ruby and
+# sed editing in place, and inline python, node, bun, perl or ruby code. Each target is judged as a
+# redirect to it would be; one built at run time, or a program that cannot be read, is refused.
+block	-	sed -n 'w scripts/env/show.sh' notes/keep.txt
+block	-	sed -n '1w scripts/env/set.sh' notes/keep.txt
+block	-	sed 's/a/b/w scripts/env/show.sh' notes/keep.txt
+block	-	sed -e p -e 'W scripts/env/set.sh' notes/keep.txt
+block	-	sed -n -e '$w scripts/env/envfile.py' notes/keep.txt
+block	-	cd scripts/env && sed -n 'w show.sh' ../../notes/keep.txt
+block	-	sed -n 'w .claude/hooks/lib.sh' notes/keep.txt
+block	-	sed -n 'w scripts/check/hook-probes.tsv' notes/keep.txt
+block	-	sed -n 'w scripts/ops/unlock.sh' notes/keep.txt
+block	-	cd .claude && sed -n 'w settings.json' ../notes/keep.txt
+block	-	sed -n 'w .env' notes/keep.txt
+block	-	sed -i '' -e '1w scripts/env/show.sh' notes/keep.txt
+block	-	sed 'r .env' notes/keep.txt
+block	-	sed '1R .env.local' notes/keep.txt
+block	-	sed 's/.*/rm -rf src/e' notes/keep.txt
+block	-	sed '1e rm scripts/env/show.sh' notes/keep.txt
+block	-	sed -n "w $(printf scripts/env/show.sh)" notes/keep.txt
+block	-	printf 'w scripts/env/show.sh\n' > @TMP@/w.sed && sed -f @TMP@/w.sed notes/keep.txt
+block	-	sed -f /dev/stdin notes/keep.txt <<'EOF'\nw scripts/env/show.sh\nEOF
+block	-	sed 'k' notes/keep.txt
+block	-	awk '{print > "scripts/env/show.sh"}' notes/keep.txt
+block	-	awk '{print >> "scripts/env/set.sh"}' notes/keep.txt
+block	-	cd scripts/env && awk '{print > "show.sh"}' ../../notes/keep.txt
+block	-	awk '{printf "%s\n", $0 > ".claude/hooks/lib.sh"}' notes/keep.txt
+block	-	awk '{print > "scripts/ops/unlock.sh"}' notes/keep.txt
+block	-	cd .claude && awk '{print > "agent-config.json"}' ../notes/keep.txt
+block	-	awk '{print > ".env"}' notes/keep.txt
+block	-	awk -v f=scripts/env/show.sh '{print > f}' notes/keep.txt
+block	-	awk '{print > $1}' notes/keep.txt
+block	-	awk 'BEGIN { system("rm scripts/env/show.sh") }'
+block	-	awk 'BEGIN { system("cd .claude && rm settings.json") }'
+block	-	awk -v c=date 'BEGIN { system(c) }'
+block	-	awk '{print | "sh"}' notes/keep.txt
+block	-	awk 'BEGIN { "cat .env" | getline line; print line }'
+block	-	awk -v f=.env 'BEGIN { getline line < f; print line }'
+block	-	awk 'BEGIN { f = ".e" "nv"; getline line < f; print line }'
+block	-	awk -f @TMP@/missing.awk notes/keep.txt
+block	-	perl -i -pe 's/a/b/' scripts/env/show.sh
+block	-	perl -pi.bak -e 's/a/b/' .claude/settings.json
+block	-	perl -i -pe 's/a/b/' scripts/ops/unlock.sh
+block	-	perl -e 'unlink "scripts/ops/unlock.sh"'
+block	-	ruby -i -pe 'sub(/a/, "b")' scripts/check/hook-probes.tsv
+block	-	python3 -c "import os; os.remove('.claude/hooks/lib.sh')"
+block	-	python3 -c "import shutil; shutil.copy('notes/keep.txt', 'scripts/env/show.sh')"
+block	-	python3 -c "import os; os.rename('notes/keep.txt', '.e' + 'nv')"
+block	-	python3 -c "import subprocess; subprocess.run(['rm', 'settings.json'], cwd='.claude')"
+block	-	cd .claude && python3 -c "import os; os.remove('settings.json')"
+block	-	cd .claude/hooks && python3 -c 'print(1)'
+block	-	python3 - <<'PY'\nimport os\nos.remove('.cl' + 'aude/hooks/lib.sh')\nPY
+block	-	node -e "require('fs').unlinkSync('.claude/hooks/lib.sh')"
+block	-	node -e "require('child_process').execSync('rm .claude/settings.json')"
+block	-	bun -e "await Bun.write('scripts/ops/unlock.sh', '')"
+block	-	ruby -e 'File.delete(".claude/settings.json")'
+block	-	perl -e 'print `rm notes/keep.txt`'
+allow	-	sed -n 'w notes/out.txt' notes/keep.txt
+allow	-	sed 's/a/b/w /dev/stdout' notes/keep.txt
+allow	-	sed 'r notes/keep.txt' docs/a.md
+allow	-	sed -e :a -e '$!N;ta' notes/keep.txt
+allow	-	sed -n '/start/,/end/{p;}' docs/a.md
+allow	-	sed -i '' 's/a/b/' notes/keep.txt
+allow	-	sed -E 's/(x)/\1/g; 1!G; h; $!d' notes/keep.txt
+allow	-	awk '{print > "notes/out.txt"}' notes/keep.txt
+allow	-	awk '{print $1 > "/dev/stderr"}' notes/keep.txt
+allow	-	awk '{print $1 | "sort"}' notes/keep.txt
+allow	-	awk 'BEGIN { system("date") }'
+allow	-	awk 'BEGIN { "date" | getline d; print d }'
+allow	-	awk '$1 > 5 { print $1 }' notes/keep.txt
+allow	-	awk -F: '{ if ($2 > 0) print ($1 > $2) }' notes/keep.txt
+allow	-	perl -pi -e 's/a/b/' notes/keep.txt
+allow	-	python3 -c 'print(sum(range(10)))'
+allow	-	node -e 'console.log(JSON.stringify({a: 1}))'
+allow	-	node -e "console.log(/b/.exec('abc'))"
+allow	-	cd notes && python3 -c 'print(1)'
+# Paths from xargs, find or a $( ) (or a variable set from one) handed to a command that changes
+# files: they cannot be checked. A named destination keeps copying out open; a git listing that
+# names no guarded place is seen.
+block	-	find . -name lib.sh | xargs rm
+block	-	git ls-files scripts | xargs chmod 000
+block	-	echo scripts/ops/unlock.sh | xargs -I{} cp notes/keep.txt {}
+block	-	ls .claude/hooks/*.sh | xargs -n1 sed -i '' 's/a/b/'
+block	-	chmod 000 $(find . -name '*.sh')
+block	-	rm $(git ls-files scripts)
+block	-	rm $(git ls-files notes | sed s/notes/docs/)
+block	-	f=$(find . -name show.sh); rm "$f"
+block	-	for f in $(git ls-files scripts); do chmod 000 "$f"; done
+block	-	echo x > "$(git ls-files scripts/check | head -1)"
+block	-	find . -name '*.sh' -exec chmod 000 {} +
+block	-	find scripts -type f -exec sed -i '' 's/a/b/' {} +
+block	-	find . -name '*.json' -execdir cp @TMP@/token {} \;
+block	-	git ls-files notes | xargs -I{} cp notes/keep.txt @TMP@/bk-{}
+block	-	git ls-files notes | xargs -I% cp notes/keep.txt @TMP@/bk-%
+allow	-	find notes -name '*.txt' | xargs cp -t @TMP@/
+allow	-	rm $(git ls-files notes)
+allow	-	tmp=$(mktemp); echo x > "$tmp"; rm -f "$tmp"
+allow	-	find notes -name '*.txt' -exec chmod 644 {} +
+allow	-	find docs -name '*.md' -exec sed -i '' 's/a/b/' {} +
+allow	-	git ls-files '*.md' | xargs grep -l keep
+allow	-	chmod 644 notes/keep.txt
+allow	-	mv notes docs/notes
+allow	-	ln -s ../docs/a.md notes/a.md
+allow	-	git checkout -- notes/keep.txt
+allow	-	git stash push -- notes/keep.txt
+allow	-	git restore notes/keep.txt
 # A program that loaded a .env* file hands its values to the code it runs.
 block	-	bun -e 'console.log(process.env)'
 block	-	bun -p process.env.API_KEY

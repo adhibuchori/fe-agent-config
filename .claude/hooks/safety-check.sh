@@ -5,7 +5,9 @@
 # (scripts/env/show.sh and, while env is unlocked, scripts/env/set.sh aside), and the agent running
 # the unlock script, touching .claude/state/unlock/ or changing scripts/env/ (docs/unlock.md), and
 # any change to the files that turn the guards on (.claude/settings.json, settings.local.json,
-# agent-config.json, agent-config-kit.lock), which the shell may only read. The rules live in
+# agent-config.json, agent-config-kit.lock) or to the guard scripts themselves (.claude/hooks/, as a
+# plugin its scripts/ and hooks/, scripts/check/hook-probes.*, scripts/ops/unlock.sh), which the
+# shell may only read (and, unlock.sh aside, run and copy out). The rules live in
 # analyze_command (lib.sh); scripts/check/hook-probes.tsv lists what each one must block and what it
 # must let through. The user runs a refused command themselves with `!` when it is really meant.
 #
@@ -66,6 +68,11 @@ else
   # The files that turn the guards on: unparsed, any command naming one may change it.
   if grep -qiE 'agent-config(-kit[.]lock|[.]json)|[.]claude[^[:alnum:]]{0,8}settings([.]local)?[.]json|opted-in-projects' <<<"$CMD"; then
     block "[safety] BLOCKED: this command names a file that turns the guards on (.claude/settings.json, settings.local.json, agent-config.json or agent-config-kit.lock), and without python3 it cannot tell a read from a change. Install python3, or read it with the Read tool."
+  fi
+  # The guard scripts themselves (.claude/hooks/, the plugin's folder, hook-probes.*): the same.
+  if grep -qiE '[.]claude[^[:alnum:]]{0,8}(hooks|plugins)([^[:alnum:]_-]|$)|hook-probes|CLAUDE_PLUGIN_ROOT' <<<"$CMD" ||
+    { [ -n "$HOOK_LIB_DIR" ] && grep -qiF -- "$HOOK_LIB_DIR" <<<"$CMD"; }; then
+    block "[safety] BLOCKED: this command names a guard script (.claude/hooks/, the plugin's scripts/ or hooks/, scripts/check/hook-probes.*), and without python3 it cannot tell a read from a change. Install python3, or read it with the Read tool."
   fi
   report "safety-check could not parse this command (python3 is missing), so only its plain-text rules ran." PreToolUse
   exit 0

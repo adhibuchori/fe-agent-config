@@ -18,6 +18,8 @@
       "mcp__db-prod__execute_sql",
       "Edit(.claude/agent-config.json)",
       "Edit(.claude/agent-config-kit.lock)",
+      "Edit(.claude/hooks/**)",
+      "Edit(scripts/check/hook-probes.*)",
       "Edit(scripts/ops/unlock.sh)",
       "Edit(scripts/env/**)"
     ],
@@ -73,7 +75,13 @@
         "./**/.env-*.example",
         "./**/.env_*.example"
       ],
-      "denyWrite": [".claude/state/unlock", ".claude/state/unlock/**"]
+      "denyWrite": [
+        ".claude/state/unlock",
+        ".claude/state/unlock/**",
+        ".claude/hooks",
+        ".claude/hooks/**",
+        "scripts/ops/unlock.sh"
+      ]
     }
   },
   "hooks": {
