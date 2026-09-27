@@ -16,7 +16,7 @@
 <circle cx="960" cy="416" r="104" fill="#fce7f3" opacity="1"/>
 <path d="M1000,246Q1002.8,253.2 1010,256Q1002.8,258.8 1000,266Q997.2,258.8 990,256Q997.2,253.2 1000,246Z" fill="#818cf8" opacity="1"/>
 <path d="M1052,592Q1054.2,597.8 1060,600Q1054.2,602.2 1052,608Q1049.8,602.2 1044,600Q1049.8,597.8 1052,592Z" fill="#7dd3fc" opacity="1"/>
-<g transform="translate(836 312) scale(1.0)">
+<g transform="translate(847.2 310) scale(1.0)">
 <defs>
 <radialGradient id="mg" cx="50%" cy="60%" r="55%">
 <stop offset="0" stop-color="#a5b4fc"/>

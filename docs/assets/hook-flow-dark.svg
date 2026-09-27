@@ -14,27 +14,27 @@
 <clipPath id="cc">
 <rect x="1" y="1" width="1198" height="488" rx="28"/>
 </clipPath>
-<rect x="1" y="1" width="1198" height="488" rx="28" fill="#16140f" stroke="#37322a" stroke-width="2"/>
+<rect x="1" y="1" width="1198" height="488" rx="28" fill="#0f131a" stroke="#2b323d" stroke-width="2"/>
 <text class="s" x="60" y="78" font-size="34" font-weight="800" fill="#f4f1eb">How a hook decides</text>
 <text class="s" x="60" y="112" font-size="19" font-weight="500" fill="#d2ccc0">Every command the agent tries passes a PreToolUse hook first.</text>
 <g class="b1">
-<rect x="60" y="176" width="380" height="96" rx="18" fill="#211e18" stroke="#37322a" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="60" y="176" width="380" height="96" rx="18" fill="#171b23" stroke="#2b323d" stroke-width="1.5" filter="url(#sh)"/>
 <text class="s" x="84" y="210" font-size="15" font-weight="600" fill="#d2ccc0">agent wants to run</text>
-<rect x="80" y="222" width="340" height="36" rx="10" fill="#2a261f" stroke="#3d372d" stroke-width="1.5"/>
+<rect x="80" y="222" width="340" height="36" rx="10" fill="#1f242e" stroke="#363e4b" stroke-width="1.5"/>
 <g clip-path="url(#p1)"><rect class="band" x="80" y="222" width="90" height="36" fill="url(#sg)"/></g>
 <text class="m" x="96" y="246" font-size="17" font-weight="600" fill="#f4f1eb">$ git push --force origin main</text>
 <rect class="ring" x="60" y="176" width="380" height="96" rx="18" fill="none" stroke="#a5b4fc" stroke-width="2.5"/>
 </g>
 <g class="b2">
-<rect x="60" y="336" width="380" height="96" rx="18" fill="#211e18" stroke="#37322a" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="60" y="336" width="380" height="96" rx="18" fill="#171b23" stroke="#2b323d" stroke-width="1.5" filter="url(#sh)"/>
 <text class="s" x="84" y="370" font-size="15" font-weight="600" fill="#d2ccc0">agent wants to run</text>
-<rect x="80" y="382" width="340" height="36" rx="10" fill="#2a261f" stroke="#3d372d" stroke-width="1.5"/>
+<rect x="80" y="382" width="340" height="36" rx="10" fill="#1f242e" stroke="#363e4b" stroke-width="1.5"/>
 <g clip-path="url(#p2)"><rect class="band" x="80" y="382" width="90" height="36" fill="url(#sg)"/></g>
 <text class="m" x="96" y="406" font-size="17" font-weight="600" fill="#f4f1eb">$ git status</text>
 <rect class="ring" x="60" y="336" width="380" height="96" rx="18" fill="none" stroke="#a5b4fc" stroke-width="2.5"/>
 </g>
 <circle cx="600" cy="300" r="118" fill="#2a2946" opacity="0.5"/>
-<g transform="translate(482 192) scale(1.0)">
+<g transform="translate(486.2 194) scale(1.0)">
 <defs>
 <radialGradient id="mg" cx="50%" cy="60%" r="55%">
 <stop offset="0" stop-color="#a5b4fc"/>
@@ -42,51 +42,51 @@
 </radialGradient>
 </defs>
 <ellipse cx="110" cy="200" rx="70" ry="8" fill="#000000" opacity="0.45"/>
-<path d="M110,130L40.7,141.6Q3.9,145.9 35.1,127.2Q-1.8,124.1 32.9,112Q-2.4,101.7 34.2,96.7Q2,79.6 39,82Q11.3,58.9 46.9,68.6Q25.1,40.5 57.7,57Q42.7,25.3 70.8,47.8Q63.4,13.8 85.8,41.5Q86.1,6.8 101.8,38.2Q110,4.4 118.2,38.2Q133.9,6.8 134.2,41.5Q156.6,13.8 149.2,47.8Q177.3,25.3 162.3,57Q194.9,40.5 173.1,68.6Q208.7,58.9 181,82Q218,79.6 185.8,96.7Q222.4,101.7 187.1,112Q221.8,124.1 184.9,127.2Q216.1,145.9 179.3,141.6Z" fill="url(#mg)" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M110,130L40.7,141.6Q3.9,145.9 35.1,127.2Q-1.8,124.1 32.9,112Q-2.4,101.7 34.2,96.7Q2,79.6 39,82Q11.3,58.9 46.9,68.6Q25.1,40.5 57.7,57Q42.7,25.3 70.8,47.8Q63.4,13.8 85.8,41.5Q86.1,6.8 101.8,38.2Q110,4.4 118.2,38.2Q133.9,6.8 134.2,41.5Q156.6,13.8 149.2,47.8Q177.3,25.3 162.3,57Q194.9,40.5 173.1,68.6Q208.7,58.9 181,82Q218,79.6 185.8,96.7Q222.4,101.7 187.1,112Q221.8,124.1 184.9,127.2Q216.1,145.9 179.3,141.6Z" fill="url(#mg)" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
 <path d="M51.7,92.2L40.5,88.4" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
 <path d="M65.4,71.7L56.8,64.1" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
 <path d="M86.8,58.2L82.3,48" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
 <path d="M133.2,58.2L137.7,48" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
 <path d="M154.6,71.7L163.2,64.1" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
 <path d="M168.3,92.2L179.5,88.4" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
-<circle cx="62" cy="74" r="14" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="62" cy="74" r="14" fill="#fff1e6" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
 <circle cx="62" cy="75" r="7" fill="#f9a8d4"/>
-<circle cx="158" cy="74" r="14" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="158" cy="74" r="14" fill="#fff1e6" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
 <circle cx="158" cy="75" r="7" fill="#f9a8d4"/>
-<ellipse cx="82" cy="186" rx="18" ry="10" fill="#ffe3d3" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
-<ellipse cx="138" cy="186" rx="18" ry="10" fill="#ffe3d3" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
-<ellipse cx="110" cy="124" rx="66" ry="60" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
-<path d="M80,80Q84,60 96,70Q104,52 112,66Q122,52 126,70Q140,60 142,80Q128,74 110,77Q92,74 80,80Z" fill="url(#mg)" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="82" cy="186" rx="18" ry="10" fill="#ffe3d3" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="138" cy="186" rx="18" ry="10" fill="#ffe3d3" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="110" cy="124" rx="66" ry="60" fill="#fff1e6" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M80,80Q84,60 96,70Q104,52 112,66Q122,52 126,70Q140,60 142,80Q128,74 110,77Q92,74 80,80Z" fill="url(#mg)" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
 <ellipse cx="74" cy="140" rx="11" ry="6.5" fill="#f9a8d4" opacity=".8"/>
 <ellipse cx="146" cy="140" rx="11" ry="6.5" fill="#f9a8d4" opacity=".8"/>
 <g class="eye">
-<ellipse cx="88" cy="119" rx="7.5" ry="9.5" fill="#1c1a15"/>
+<ellipse cx="88" cy="119" rx="7.5" ry="9.5" fill="#12151b"/>
 <g class="glint">
 <circle cx="90.6" cy="115" r="3" fill="#ffffff"/>
 <circle cx="85.6" cy="123.5" r="1.4" fill="#ffffff" opacity=".8"/>
 </g>
 </g>
 <g class="eye">
-<ellipse cx="132" cy="119" rx="7.5" ry="9.5" fill="#1c1a15"/>
+<ellipse cx="132" cy="119" rx="7.5" ry="9.5" fill="#12151b"/>
 <g class="glint">
 <circle cx="134.6" cy="115" r="3" fill="#ffffff"/>
 <circle cx="129.6" cy="123.5" r="1.4" fill="#ffffff" opacity=".8"/>
 </g>
 </g>
 <ellipse cx="110" cy="138" rx="15" ry="11" fill="#ffe3d3"/>
-<ellipse cx="110" cy="132.5" rx="6" ry="4.5" fill="#1c1a15"/>
-<path d="M102.5,142.5q3.75,4.5 7.5,0q3.75,4.5 7.5,0" fill="none" stroke="#1c1a15" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-<ellipse cx="50" cy="152" rx="9" ry="10.5" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" transform="rotate(-25 46 150)"/>
+<ellipse cx="110" cy="132.5" rx="6" ry="4.5" fill="#12151b"/>
+<path d="M102.5,142.5q3.75,4.5 7.5,0q3.75,4.5 7.5,0" fill="none" stroke="#12151b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="50" cy="152" rx="9" ry="10.5" fill="#fff1e6" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" transform="rotate(-25 46 150)"/>
 <g class="mag">
-<path d="M168,152L150,176" stroke="#1c1a15" stroke-width="10" stroke-linecap="round"/>
+<path d="M168,152L150,176" stroke="#12151b" stroke-width="10" stroke-linecap="round"/>
 <path d="M168,152L150,176" stroke="#818cf8" stroke-width="4.5" stroke-linecap="round"/>
-<circle cx="184" cy="128" r="24" fill="#e0f2fe" stroke="#1c1a15" stroke-width="3.2"/>
+<circle cx="184" cy="128" r="24" fill="#e0f2fe" stroke="#12151b" stroke-width="3.2"/>
 <circle cx="184" cy="128" r="19" fill="none" stroke="#4f46e5" stroke-width="5"/>
 <path d="M174,120q4,-7 12,-7" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
 </g>
-<circle cx="152" cy="172" r="9.5" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="152" cy="172" r="9.5" fill="#fff1e6" stroke="#12151b" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
 </g>
-<rect x="516" y="420" width="158" height="31" rx="15.5" fill="#211e18" stroke="#37322a" stroke-width="1.5"/>
+<rect x="516" y="420" width="158" height="31" rx="15.5" fill="#171b23" stroke="#2b323d" stroke-width="1.5"/>
 <text class="s" x="595" y="440.8" font-size="15" font-weight="600" fill="#f4f1eb" text-anchor="middle">PreToolUse hook</text>
 <g class="ar a1">
 <path d="M446,224L488,262M479.2,259.9L488,262L485,253.5" fill="none" stroke="#d2ccc0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -106,7 +106,7 @@
 </g>
 <g class="blk">
 <rect class="glow" x="780" y="176" width="360" height="96" rx="18" fill="#f9a8d4" filter="url(#gl)"/>
-<rect x="780" y="176" width="360" height="96" rx="18" fill="#3b2431" stroke="#f9a8d4" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="780" y="176" width="360" height="96" rx="18" fill="#352541" stroke="#f9a8d4" stroke-width="1.5" filter="url(#sh)"/>
 <g class="minus">
 <circle cx="826" cy="224" r="22" fill="#ec4899" stroke="#ffffff" stroke-width="2.5"/>
 <rect x="814" y="220" width="24" height="8" rx="3" fill="#ffffff"/>
