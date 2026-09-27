@@ -79,9 +79,15 @@ run "Separation of Concerns" bun run check:soc
 run "Tailwind Class Check" bun run check:tailwind
 run "Error Code Mapping Check" bun run check:error-codes
 run "Error Catch Check" bun run check:error-catch
+# The image builds what this gate validated: generated clients, a readable digest pin, and a Bun no
+# older than the one this gate ran.
+run "Dockerfile Check" bun run check:dockerfile
 optional "Dialog Description Check" check:dialog-desc
 optional "Responsive Check" check:responsive
 optional "Skeleton Switch Check" check:skeleton-switch
+optional "Skeleton Pairs Check" check:skeleton-pairs
+optional "Payload Endpoint Registry Check" check:endpoints
+optional "Payload Crypto Interop Check" check:crypto-interop
 
 # The mirrors a second tool reads: stale copies still read as valid, so drift fails here. Both
 # scripts exit 0 on a branch the prod strip has cleaned.
