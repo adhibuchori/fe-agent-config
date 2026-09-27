@@ -1,4 +1,4 @@
-# Operations — Hooks, GitHub and CI, Reviews, MCP, Deploys
+# Operations — Hooks, GitHub and CI, Reviews, MCP, Deploys, Access
 
 > **List it in the CLAUDE.md "On-demand References" table; never `@`-import it.** An import loads
 > the whole file into every session. This is a template: copy it to `.claude/OPERATIONS.md`, fill
@@ -58,6 +58,21 @@ whole:
 `commandWrappers` names commands that run another command (a secrets loader, an output filter), so
 the analyzer judges the command they wrap. Multi-repo workspaces stay off unless
 `AGENT_WORKSPACE_ROOT` names the folder that holds the repos.
+
+**How the guards fail.** They fail closed: a payload that is not a JSON object, a `python3` that
+crashes or runs past its cap, or SQL `db-guard` cannot read refuses the call; only a machine with no
+`python3` falls back to plain-text rules for the most dangerous cases (`.env*` names, the unlock,
+the guard files themselves). Each guard keeps one deadline for its whole run, inside Claude Code's
+hook timeout (which would let the call through), and says so when it runs out of time. The command
+analyzer reaches `python3` through a file descriptor, never as an argument, because Linux caps one
+argument's size. Every `git` a hook starts disables `core.fsmonitor`, a linked worktree is guarded
+like its main checkout, and a symlink is judged both as named and as the file it points to.
+
+**A guard the agent could rewrite would guard nothing.** The shell may read, run and copy out the
+guard scripts, the probes, the unlock script and `scripts/env/`, and only read the settings files;
+every write route the analyzer can read (redirects, `tee`, `cp`/`mv`, `sed -i`, inline `python -c`,
+`git checkout -- <file>`, …) is refused. A change goes through the Edit tool, where the user sees
+the diff, or the user runs it with `!`.
 
 **No hook reads permission from the prompt.** What is costly to undo stays refused whoever asks: a
 push to a protected branch (the user runs it with `!`), deleting one,
@@ -252,3 +267,57 @@ Triage every finding as a claim:
 
 A `vendored:` entry stops blocking only while the recorded hash matches, so an upgrade fails the
 gate until it is triaged again.
+
+## Unlock
+
+`.env*` files and production writes are locked by default and only the user opens them, for a few
+minutes (`bun unlock env`, `bun unlock db`; `npm run unlock …` where there is no bun). While `env`
+is open the agent changes one value with `scripts/env/set.sh`, reading the value from stdin so it
+never enters the transcript; `scripts/env/show.sh` prints every key with secrets masked, locked or
+not. The whole flow, what it does not stop, and the per-package-manager commands: `docs/unlock.md`.
+
+## Secret scan
+
+`bash scripts/check/secrets.sh` runs `gitleaks` over the staged changes on every commit (the gates
+list, or `.pre-commit-config.yaml`) with the repo's `.gitleaks.toml`, so a secret is refused before
+it is committed, not found after it is pushed. It fails, never skips, when gitleaks is missing; a
+release other than the one CI pins still scans, with a warning. CI scans the pushed history again.
+
+## Server access
+
+Reach a server through one path you can prove is guarded, and keep a break-glass path for when it
+is down:
+
+- **One way in.** SSH through a tunnel behind an identity-aware access proxy, with the public SSH
+  port closed at the firewall except for the provider's own console. Prove the closed state from
+  outside after any change: a direct connect to port 22 must time out, and the tunnel must work.
+- **Break-glass, cheapest step first:** a name that does not resolve is the local resolver (compare
+  with a public resolver); an expired access session is a fresh login; a hanging tunnel is the
+  tunnel service (restart it from the provider's web console); no tunnel at all means opening port
+  22 briefly from a trusted network, fixing, and closing it again; a host that will not boot is the
+  provider's recovery mode.
+- **Keep what the console depends on.** A provider may rotate its own keys in `authorized_keys`;
+  deleting them can lock its web console out.
+- **A network that answers every connect itself** (some mobile carriers) cannot test exposure: test
+  from another network, or read the firewall counters on the host.
+
+## Edge: client IP behind a CDN or proxy
+
+A rate limiter or an audit log that keys on a client-IP header is only as honest as the path to the
+origin:
+
+- **Accept traffic only from the CDN** when you trust its client-IP header. Anything that can reach
+  the origin directly can send that header itself and mint a fresh rate-limit bucket per request,
+  on exactly the routes (sign-in, one-time codes) the limiter protects.
+- **Restrict at the reverse proxy's router, not the host firewall**, when the same ports serve sites
+  that are not behind the CDN: a firewall rule would take them offline. Attach the allowlist
+  through the deploy platform's own settings, so a redeploy does not silently drop a hand edit.
+- **Do not make the proxy "trust" the CDN's forwarded headers** to fix this: a proxy that
+  overwrites `X-Real-Ip` with the real peer is unforgeable; one told to preserve what the CDN sends
+  passes a client-supplied value straight through.
+- **Verify the real peer address reaches the proxy** before allowlisting (a packet capture on the
+  container bridge), and leave port 80 open for ACME HTTP-01 when it only redirects to HTTPS.
+- **Keep internal hops internal.** A frontend server calling its backend through the public URL goes
+  back out through the CDN, which overwrites the client-IP header with the server's own address and
+  collapses every visitor into one bucket. Call the internal service address.
+- The CDN's address ranges change: re-check the allowlist when legitimate traffic starts to 403.

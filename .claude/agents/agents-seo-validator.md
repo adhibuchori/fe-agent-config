@@ -77,6 +77,21 @@ Do not require `keywords`: search engines ignore it.
 llmstxt.org shape (H1 title, blockquote summary, link sections) and links resolve. Never require it,
 and never invent directives no crawler reads.
 
+### 8. An app behind sign-in
+
+An app whose routes are mostly private is judged differently; do not demand a public-site setup:
+
+- `index: false, follow: false` sits on the layout that covers the private route group (the root
+  layout when the app has no public page). Each private route a crawler could index is HIGH; a
+  crawler reading private data is CRITICAL.
+- A robots file, where there is one, disallows the app, or everything but its public pages. A
+  missing sitemap is correct for a private app.
+- Public pages inside the app (privacy, terms, a verification page) carry their own title and
+  description, and are not caught by the private `noindex` unless that is deliberate.
+- Each signed-in page sets its own title, so open tabs can be told apart (LOW).
+- With next-intl, a share image lives under the locale segment: at the root, the locale proxy
+  redirects the image request to a path that does not exist and the share card comes out empty.
+
 ## Output
 
 ```text

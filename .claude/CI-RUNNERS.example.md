@@ -77,6 +77,8 @@ Revisit when a job crosses the minute.
 
 **No path filters on markdown.** The quality gate reads markdown (the AI-config check, the workflow
 mirror check, rule citations), so a `paths-ignore` on `**.md` would silently disable real checks.
+A workflow that does filter by path (a workflows linter that reads only `.github/`) must never be a
+required check: a required check that never reports blocks the merge.
 
 ## Quota monitoring is already native
 
@@ -87,3 +89,6 @@ usage API can be measured from the GitHub jobs API: sum `ceil(duration / 60)` ov
 `runner_name` starts with the provider's prefix.
 
 Every job also sets `timeout-minutes`: a hung job otherwise bills until the platform's own limit.
+
+Splitting the pools buys headroom and removes the dependence on one vendor; it does not fix a quota
+problem. Pruning jobs nobody reads does.

@@ -76,6 +76,17 @@ Values derived from props, state or hooks belong in `style`. Do not flag those.
   `src/hooks/api/` (Rule 14)
 - a query key written as a string literal instead of built by the key factory (Rule 15)
 
+### §M, §N and §P Rules 35-46 — sessions, data surfaces, the payload contract
+
+- A component that renders `error.message` or a problem `detail`: map the code to a message (Rule 37).
+- A theme token declared in the light block and not the dark one (or the reverse) is BLOCK; a
+  literal colour where a token exists is WARN (Rule 39).
+- A data surface with no empty or error state, or a fixture under `src/lib/` (Rules 38, 41).
+- A token, session object or key decoded, stored or read in the browser (Rules 35-36).
+- Where `payload.config.json` exists: a `fetch` outside the transport, a typed `/api/...` path, an
+  edited `endpoints.generated.ts`, or `src/lib/payload/` imported by a hook or a component
+  (Rules 42-46).
+
 ### §F Rules 23-24 — React Compiler
 
 React Compiler is active. Flag `useCallback`, `useMemo` or `memo()` added without a comment citing

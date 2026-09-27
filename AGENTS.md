@@ -362,6 +362,67 @@ marker the docs generator reads by name, and it exports nothing (`export {}`). E
 
 ---
 
+## M. Session & Authorization Boundary
+
+**Rule 35 — The frontend decides nothing about who may do what.** The backend owns sessions and
+authorization. A route guard or a proxy check is UX: it may check that a session cookie is present,
+never decode or verify a token itself. The server-side session check is the gate.
+
+**Rule 36 — Never persist a session client-side.** No token or session object in `localStorage`,
+`sessionStorage` or the store; the httpOnly cookie is the only copy the browser holds.
+
+**Rule 37 — Never render a raw backend error message.** Map the error code to a message in every
+locale (`.claude/rules/common/error-codes.md`); an unmapped code shows a generic line, never
+`error.message` or a problem `detail`.
+
+---
+
+## N. Data Surface Rules
+
+**Rule 38 — Every data surface has three states**: loading, empty and error, each with one home (a
+skeleton or the route's `loading.tsx`; an empty state; an error state with a retry). The empty or
+error component is never a loading state.
+
+**Rule 39 — Chart and status colours come from tokens** that have a dark-theme value, never a
+literal colour in a component.
+
+**Rule 40 — Table state lives in one hook** (sorting, paging, selection), with stable column
+definitions and a module-level empty constant, never a fresh `[]` per render.
+
+**Rule 41 — A fixture is temporary and labelled.** Fixtures live under `src/testing/fixtures/`,
+never
+`src/lib/`. A screen is wired to its endpoint or not built yet; a missing endpoint shows an honest
+empty panel, never invented numbers.
+
+---
+
+## P. Payload Contract (where adopted)
+
+Only where the repo adopted the module (a `payload.config.json` exists). The full contract and its
+threat model: `.claude/PAYLOAD-CONTRACT.md`; the short form loads from
+`.claude/rules/common/payload-contract.md`.
+
+**Rule 42 — Every body that crosses a service boundary is sealed**, unless its route is exempted in
+`payload.config.json` with a written reason. A half-policy is chosen by what the body needs
+(`response-only` for a multipart upload, `request-only` for an event stream), never by how sensitive
+it looks.
+
+**Rule 43 — No route path outside the registry.** Paths come from
+`src/lib/api/endpoints/endpoints.ts` (`pathOf`), never a typed `/api/...`; `endpoints.generated.ts`
+is regenerated (`bun run generate:endpoints`), never edited.
+
+**Rule 44 — Encrypt at the transport only.** The API client's transport seals and opens around each
+request; the proxy route bridges the browser hop and the backend hop. Components and hooks see
+plaintext, and no `fetch` exists outside the transport. Nothing else imports `src/lib/payload/`.
+
+**Rule 45 — Keys are added, never repurposed**: one variable per hop, `<NAME>_NEXT` for rotation,
+never public, never printed or committed. Tests use placeholder bytes and the real cipher.
+
+**Rule 46 — The committed switch says `strict`.** Debug with `PAYLOAD_MODE=off` in your own shell;
+every service refuses `off` in production.
+
+---
+
 ## L. Documentation Auto-Discovery
 
 The docs site (`<docs-repo>`) auto-discovers folders to document via a `@documented` JSDoc tag in `index.ts` — a marker file

@@ -209,3 +209,13 @@ The test is the cheaper guard and the only one that still works after the branch
 that walks its own route tree: every `loading.tsx` has a `page.tsx` beside it, and every
 non-redirect `page.tsx` has a `loading.tsx` beside it. Assert first that the walk found the routes
 it expected — a filesystem test that matches nothing passes by vacuum.
+
+## Measured, or named as not yet
+
+A pair the harness does not register is a pair nobody measured. `bun run check:skeleton-pairs`
+walks the imports from the harness page and fails on any `*-skeleton*.tsx` a screen renders that
+the harness never reaches. A skeleton that cannot be measured yet (it needs a signed-in fixture, a
+state the harness cannot build) goes into `scripts/measure/unmeasured-skeletons.json` as
+`{ "path", "reason" }`; the check fails on an entry with no reason, on an entry that is paired now,
+and on one that names no rendered skeleton, so the list only ever shrinks. Reachable is not
+rendered: whether the pair shows the right state is the harness's to judge.

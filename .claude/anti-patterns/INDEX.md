@@ -65,6 +65,16 @@
 | After any `openapi.json` change in the backend                  | openapi-change-needs-every-consumer-regenerated.md |
 | Changing environment variables on a self-hosted deploy platform | deploy-platform-env-is-encrypted-at-rest.md        |
 
+### Auth and media
+
+| Trigger / Task | Load |
+| --- | --- |
+| A "session expired" dialog whose sign-in button bounces back, or revocation that lags | auth-cookie-cache-outlives-revocation.md |
+| Building an account-security screen on the auth client (unlink, sessions, set a password) | better-auth-account-endpoints-are-gated.md |
+| Passkey buttons: a dismissed prompt, or a key with no PIN | better-auth-passkey-quirks.md |
+| A glass surface whose blur does nothing, or a hand-written `-webkit-` property | lightningcss-keeps-only-the-prefixed-backdrop-filter.md |
+| An avatar or banner cropper whose crop area will not sit flush | cropper-letterboxes-and-caps-the-crop-area.md |
+
 ## When to add a new entry
 
 A new anti-pattern qualifies when:

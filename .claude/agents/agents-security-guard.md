@@ -74,6 +74,22 @@ Flag for human review any change to `.claude/settings.json`, `.claude/hooks/`,
 `.github/workflows/`. These decide what an agent may do; a change there is never approved by the
 agent that made it.
 
+### 6. Web response headers (a repo with `next.config.*` or a server that renders pages)
+
+- Missing or weakened in the headers config: `X-Content-Type-Options: nosniff`; `X-Frame-Options:
+  DENY` or CSP `frame-ancestors 'none'`; HSTS with a long `max-age`, `includeSubDomains` and
+  `preload`; `Referrer-Policy: strict-origin-when-cross-origin`; a `Permissions-Policy` that
+  denies the camera, microphone, geolocation and payment features the app does not use;
+  `Cross-Origin-Opener-Policy: same-origin`.
+- `'unsafe-inline'` or `'unsafe-eval'` in a production `script-src` without a written reason; a
+  widened `img-src` or `connect-src` with none.
+- A per-request nonce CSP moved into static config: the nonce is then fixed at build time for every
+  response.
+- `dangerouslySetInnerHTML` (or `innerHTML`) without a comment saying why the content is safe.
+- Where the payload contract is adopted (`payload.config.json`): a `fetch` outside the transport, a
+  key with a `NEXT_PUBLIC_` prefix or printed to a log, or a route missing from the registry
+  (`.claude/PAYLOAD-CONTRACT.md`).
+
 ## Output
 
 ```text

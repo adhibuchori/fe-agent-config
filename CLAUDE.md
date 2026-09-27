@@ -142,6 +142,7 @@ template and its row.
 | ----------------------------------------------------------------------------------- | --------------------------------------------- |
 | Operations: hooks contract, GitHub and CI, reviews, MCP pins, deploys, skill scans  | `.claude/OPERATIONS.md`                       |
 | Known traps — scan trigger keywords before debugging                                | `.claude/anti-patterns/INDEX.md`              |
+| Sealed bodies, the route registry and keys (where adopted)                          | `.claude/PAYLOAD-CONTRACT.md`                 |
 | Reviewing a change (`/review` reads it)                                             | `.claude/docs/code-review-checklist.md`       |
 | Before `/promote`, when the user asks for the audit                                 | `.claude/docs/pre-promote-audit.md`           |
 | File organization examples                                                          | `.claude/docs/standards/file-organization.md` |

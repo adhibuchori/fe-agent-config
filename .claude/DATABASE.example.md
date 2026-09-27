@@ -95,6 +95,16 @@ time. The server name, which appears in every tool call, is the other half of th
 holds production read-only. MCP permissions live in `.claude/settings.json`; `.mcp.json` has no
 permission field Claude Code reads.
 
+- `explain_query` and `analyze_query_indexes` also run the SQL they are handed: `EXPLAIN ANALYZE` of
+  a write, or a stacked statement, is a real run. A repo that makes `db-prod` writable for incidents
+  widens `dbWriteGuard.toolPattern` in `.claude/agent-config.json` to those tools too, so `db-guard`
+  judges them like `execute_sql`.
+- A function of the app's own that writes reads like a query (`SELECT archive_old_rows()`), so no
+  guard can tell it apart. Call one only while `unlock db` is open; otherwise hand the statement to
+  the user.
+- Write down the backup schedule and how many backups are kept, beside the topology above, so
+  "check the latest backup" has something to check against.
+
 A production write happens outside MCP, by a person, as the owner role, and only after confirming
 the latest backup actually exists (through the backup tool or the deploy platform), rather than
 assuming the schedule ran.

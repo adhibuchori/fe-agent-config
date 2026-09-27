@@ -11,7 +11,9 @@ Rule 31).
 
 ## React Compiler
 
-React Compiler is active: never add `useMemo`, `useCallback` or `memo()` speculatively.
+React Compiler is active: never add `useMemo`, `useCallback` or `memo()` speculatively. The one
+standing exception is a table library's column definitions and instance, which keep their memo or
+opt out of the compiler (`.claude/anti-patterns/react-compiler-memoises-tanstack-table.md`).
 
 ## JSDoc Convention
 
@@ -41,6 +43,12 @@ Type prefix — pick the one matching the file's role:
 | `UI`        | `src/components/ui/**`  |
 | `Store`     | `src/store/**`          |
 | `Page`      | `src/app/**/page.tsx`   |
+| `Provider`  | a context provider      |
+| `Middleware`| `src/proxy.ts`, `src/middleware.ts` |
+| `Config`    | a config module         |
+
+A file may also open with one module-level block that says what the file is for; it does not count
+as a symbol's block, and each export still carries its own.
 
 ## Naming Conventions
 
@@ -51,3 +59,5 @@ Type prefix — pick the one matching the file's role:
 | Directories | kebab-case                         | `src/components/`                                    |
 | Constants   | kebab-case                         | `src/lib/constants/navigation/routes.ts`             |
 | Types       | kebab-case                         | `src/types/user.ts`                                  |
+| Stores      | kebab-case file, `use*Store` export | `src/store/ui-store.ts` → exports `useUiStore`      |
+| Lib / utils | kebab-case file, named exports     | `src/lib/format/money.ts` → exports `formatMoney`    |

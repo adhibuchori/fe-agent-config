@@ -22,6 +22,15 @@ density) goes in a section of its own at the end of this file.
 - Green gates say nothing about a visual change: name the surfaces the user should look at.
 - A visual change to a component reports what its skeleton does, unasked: a skeleton that renders the real component muted follows it; one that copies the geometry needs the same edit.
 
+## Parity across sibling apps
+
+- Where several frontends share a design, a UI fix is a fix in each of them unless the user scopes
+  it down; report per app, including "no change needed".
+- "Make it the same as there" means the component that plays the same **role** there, not the one
+  with the same name.
+- Port the component and its CSS, never a lookalike; then diff the rendered tree (gaps, which wrapper
+  wraps which, variant colours), not only the look.
+
 ## One component per role
 
 - Every screen playing the same role (an empty list, a flow's final screen) uses the same component.
