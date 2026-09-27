@@ -40,7 +40,7 @@
 <path d="M900,236Q902.8,243.2 910,246Q902.8,248.8 900,256Q897.2,248.8 890,246Q897.2,243.2 900,236Z" fill="#f9a8d4" opacity="1"/>
 <path d="M1050,278Q1052.2,283.8 1058,286Q1052.2,288.2 1050,294Q1047.8,288.2 1042,286Q1047.8,283.8 1050,278Z" fill="#818cf8" opacity="1"/>
 <path d="M1040,519Q1042,524 1047,526Q1042,528 1040,533Q1038,528 1033,526Q1038,524 1040,519Z" fill="#7dd3fc" opacity="1"/>
-<g transform="translate(855.5 277.08) scale(0.95)">
+<g transform="translate(857.48 279.15) scale(0.932)">
 <defs>
 <radialGradient id="mg" cx="50%" cy="60%" r="55%">
 <stop offset="0" stop-color="#a5b4fc"/>
