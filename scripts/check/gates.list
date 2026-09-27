@@ -3,7 +3,7 @@
 # Every package script named here is in the template's SETUP.md §5 (https://github.com/adhibuchori/fe-agent-config/blob/main/SETUP.md#5-make-the-gates-runnable).
 # List only what this repo ships: a missing script fails its gate.
 all	@format
-all	gitleaks git --staged --no-banner --redact --config .gitleaks.toml
+all	bash scripts/check/secrets.sh
 code	bun run type-check
 code	bun run check:dead-code
 code	bash scripts/check/double-assertion.sh

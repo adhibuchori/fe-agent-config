@@ -128,7 +128,7 @@ CRITICAL finding is resolved before merge.
 
 ```bash
 bun audit                                                                 # dependencies (A06)
-gitleaks git --staged --no-banner --redact --config .gitleaks.toml        # staged secrets (A02)
+bash scripts/check/secrets.sh                                             # staged secrets (A02)
 gitleaks git --no-banner --redact --config .gitleaks.toml --log-opts="origin/dev..HEAD"   # the branch
 git diff --cached --name-only | grep -E '(^|/)\.env[^/]*$' | grep -vE '\.example$'        # env files staged
 git diff --cached | grep -nE 'eval\s*\(|new\s+Function\s*\(|dangerouslySetInnerHTML|__html'
