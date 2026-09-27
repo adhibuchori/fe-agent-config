@@ -829,6 +829,46 @@ block	-	arch -arm64 git reset --hard
 block	-	xcrun --sdk macosx git reset --hard
 allow	-	timeout 60 git status
 allow	-	stdbuf -oL git log -1
+# rtk, a CLI proxy that trims a command's output for an agent, is peeled like a wrapper: `rtk
+# <command>`, `rtk proxy|err|test|summary <command>` and its own options; its readers (read, smart,
+# json, log) read the file they name, as cat does. Every rule judges the command it runs.
+block	-	rtk git push --force origin main
+block	-	rtk proxy git push origin main
+block	-	rtk git reset --hard HEAD~3
+block	-	rtk git commit --no-verify -m x
+block	-	rtk -u git push origin dev
+block	-	rtk proxy -v git clean -fdx
+block	-	rtk err git checkout -- .
+block	-	rtk summary git stash push -u
+block	-	rtk git push origin --delete dev
+block	-	HUSKY=0 rtk git commit -m x
+block	-	rtk gh pr merge 12 --merge --delete-branch
+block	-	rtk rm -rf src
+block	-	rtk proxy rm -r notes
+block	-	rtk find . -delete
+block	-	rtk read .env
+block	-	rtk smart .env.local
+block	-	rtk read "$(printf %s .en)v"
+block	-	rtk json $(ls -a | grep en)
+block	-	rtk grep API_KEY .env
+block	-	rtk proxy cat .env.local
+block	-	rtk proxy bash scripts/ops/unlock.sh env
+block	-	rtk proxy touch .claude/state/unlock/env
+block	-	rtk proxy sed -i.bak 's/exit 2/exit 0/' .claude/hooks/lib.sh
+block	-	rtk proxy cp notes/keep.txt .claude/settings.json
+block	-	rtk proxy -- git reset --hard
+block	-	rtk test bash -c 'git reset --hard'
+block	-	bash -c 'rtk git reset --hard'
+block	-	timeout 5 rtk proxy git reset --hard
+block	-	/usr/local/bin/rtk proxy git push origin main
+allow	-	rtk git status
+allow	-	rtk git diff
+allow	-	rtk grep foo src
+allow	-	rtk proxy git log -1
+allow	-	rtk git push origin feature/x
+allow	-	rtk read notes/keep.txt
+allow	-	rtk proxy cat .env.example
+allow	-	rtk gain
 # git settings that change what git runs, which config it loads, where it connects or where it works
 # are refused whatever their value (fail-closed): aliases, include files, core.sshCommand,
 # core.fsmonitor, editors and pagers that are commands, credential helpers, protocol.*.allow,

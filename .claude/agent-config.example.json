@@ -43,7 +43,7 @@
     "migrations/versions"
   ],
 
-  "//commandWrappers": "Commands that run another command, which safety-check.sh peels off before judging it: \"name [subcommand ...] [-opt= ...]\". The name and any listed subcommands are dropped, then the wrapper's options up to --; an option written with a trailing = takes the next word as its value. Example: \"dotenvx run -f= --env-file=\" makes `dotenvx run -f .env.local -- git push origin main` read as `git push origin main`. env, command, exec, nohup, time, sudo, nice, xargs and shells (bash -c) are always peeled.",
+  "//commandWrappers": "Commands that run another command, which safety-check.sh peels off before judging it: \"name [subcommand ...] [-opt= ...]\". The name and any listed subcommands are dropped, then the wrapper's options up to --; an option written with a trailing = takes the next word as its value. Example: \"dotenvx run -f= --env-file=\" makes `dotenvx run -f .env.local -- git push origin main` read as `git push origin main`. env, command, exec, nohup, time, sudo, nice, xargs, shells (bash -c) and rtk (rtk proxy too) are always peeled.",
   "commandWrappers": [],
 
   "//dbWriteGuard": "db-guard.sh: toolPattern is a regex matched against the whole name of the production database's SQL tool. SQL that may write runs through it only while the user has unlocked db (docs/unlock.md). Wire db-guard.sh in settings.json with a matcher that covers the same tool. A malformed value falls back to the default.",

@@ -699,6 +699,11 @@ WRAPPER_ARGS = {"env": {"-u", "-C", "--unset", "--chdir"}, "sudo": {"-u", "-g", 
                 "xcrun": {"-sdk", "--sdk", "-toolchain", "--toolchain"}, "ionice": {"-c", "-n", "--class", "--classdata"}}
 # Wrappers that take positional words before the command: timeout's duration.
 WRAPPER_POSITIONAL = {"timeout": 1, "gtimeout": 1}
+# rtk, a CLI proxy that trims a command's output for an agent (an RTK hook may add it to any
+# command): `rtk git push ...` and `rtk proxy|err|test|summary git push ...` run `git push ...`, and
+# its own readers read the files they name, as cat does. Its options stand alone.
+RTK_RUNNERS = {"proxy", "err", "test", "summary"}
+RTK_READERS = {"read", "smart", "json", "log"}
 # commandWrappers from the config: "name [subcommand ...] [-opt= ...]". The wrapper and any of its
 # subcommands present are dropped, then its options up to `--`; an option written with a trailing
 # `=` takes the next word as its value.
@@ -1103,6 +1108,16 @@ def peel(words):
             if ws and ws[0] == "--":
                 ws.pop(0)
             del ws[:WRAPPER_POSITIONAL.get(head, 0)]
+            continue
+        if head == "rtk":
+            ws.pop(0)
+            sub = False
+            while ws and (ws[0].startswith("-") or (not sub and ws[0] in RTK_RUNNERS)):
+                sub = sub or not ws[0].startswith("-")
+                if ws.pop(0) == "--":
+                    break
+            if not sub and ws and ws[0] in RTK_READERS:
+                ws[0] = "cat"
             continue
         if head in CONFIG_WRAPPERS:
             subs, takes = CONFIG_WRAPPERS[head]

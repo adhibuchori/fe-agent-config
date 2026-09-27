@@ -214,8 +214,9 @@ text piped into a shell. Nesting deeper than six levels is refused rather than h
 
 - **Wrappers are peeled** and the command they run is judged: `env` (`-S` included), `command`,
   `builtin`, `exec`, `nohup`, `time`, `sudo`, `doas`, `nice`, `ionice`, `timeout` and
-  `gtimeout`, `stdbuf`, `setsid`, `arch`, `xcrun`, `unbuffer`, `chronic`, `caffeinate` and
-  `xargs`. Add your own with `commandWrappers`.
+  `gtimeout`, `stdbuf`, `setsid`, `arch`, `xcrun`, `unbuffer`, `chronic`, `caffeinate`,
+  `xargs`, and `rtk` (`rtk <command>`, `rtk proxy <command>`; its file readers count as `cat`).
+  Add your own with `commandWrappers`.
 - **Package runners are wrappers too**: `npm`, `pnpm`, `yarn` and `bun` `exec`, `dlx` and `x`,
   `npx`, `bunx` and `pnpx`. Their command is judged as a command, and the text they run as shell
   code (a `-c`, `--call` or `--shell-mode` string, the words of `bun exec` and `yarn exec`, which
