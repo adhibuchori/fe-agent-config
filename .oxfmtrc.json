@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "tabWidth": 2,
+  "useTabs": false,
+  "printWidth": 100,
+  "singleQuote": true,
+  "jsxSingleQuote": false,
+  "trailingComma": "all",
+  "semi": true,
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "singleAttributePerLine": true,
+  "bracketSameLine": false,
+  "endOfLine": "lf",
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "coverage/",
+    "src/lib/api/generated/",
+    ".agents/rules/",
+    ".claude/skills/",
+    ".agents/skills/",
+    // Kept in their hand-written layout, which a format pass would rewrite.
+    "scripts/check/coverage-policy.mjs",
+    "scripts/check/folder-shape.mjs"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "mcpServers": {
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena@v1.7.0",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "claude-code",
+        "--project",
+        ".",
+        "--open-web-dashboard",
+        "false"
+      ],
+      "env": {
+        "ENABLE_TOOL_SEARCH": "true"
+      }
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@4.1.1"]
+    },
+    "db-dev": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--with", "mcp==1.9.4", "postgres-mcp==0.3.0", "--access-mode=restricted"],
+      "env": { "DATABASE_URI": "${DB_DEV_URI}" }
+    },
+    "db-prod": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--with", "mcp==1.9.4", "postgres-mcp==0.3.0", "--access-mode=restricted"],
+      "env": { "DATABASE_URI": "${DB_PROD_URI}" }
+    }
+  }
+}

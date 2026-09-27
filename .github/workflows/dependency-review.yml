@@ -1,0 +1,48 @@
+# Dependency Review: fails a pull request that adds or bumps a dependency with a
+# known vulnerability of high or critical severity. It compares the dependency
+# graph of the base and head commits over the API: no checkout, no install, and
+# no project code runs.
+#
+# It stands in for the removed Dependabot config: nothing opens update pull
+# requests on a timer any more, and this gate checks every dependency change
+# when a pull request makes it.
+#
+# Needs the dependency graph, which must recognise your lockfile (check it under
+# Insights -> Dependency graph). Public repositories have it by default. A private
+# repository also needs GitHub Code Security; without it this job cannot work, so
+# it is skipped until you set the repository variable CODE_SECURITY to `true`.
+name: Dependency Review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    if: ${{ !github.event.repository.private || vars.CODE_SECURITY == 'true' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Dependency Review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          # Development tooling runs in CI and on every laptop, and a lockfile that
+          # does not record scopes reports `unknown`. The default (runtime only)
+          # would wave both through.
+          fail-on-scopes: runtime, development, unknown
+          # Licence deny-list. Off by default: upstream marks `deny-licenses` as
+          # deprecated (actions/dependency-review-action#938), and which licences
+          # are acceptable is a decision for your project. To enforce it,
+          # uncomment the line below. `deny-licenses` and `allow-licenses` are
+          # mutually exclusive. GPL binds only when you distribute the software;
+          # AGPL and SSPL also bind when you run it as a network service.
+          # deny-licenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, SSPL-1.0, BUSL-1.1, Elastic-2.0, CC-BY-NC-4.0, CC-BY-NC-SA-4.0

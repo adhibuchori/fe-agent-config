@@ -1,0 +1,17 @@
+# Gitleaks configuration.
+#
+# The default ruleset stays on; this file only narrows it where a generic rule misfires on this
+# repository. Keep every exception to one exact value: a broad allowlist (a whole folder, every
+# Markdown file, a key-name pattern) turns the scanner into decoration. `.claude/` in particular is
+# where a filled-in DATABASE.md, OPERATIONS.md or MCP config would carry a pasted credential.
+
+[extend]
+useDefault = true
+
+# scripts/check/hook-probes.sh hands the .env helpers fake secrets to prove they are masked. One is
+# shaped like a JWT, and its payload is {"sub":"probe"} with a literal "probeSignatureValue9"
+# signature, so no service would accept it. The value is matched whole, not the file: any other
+# token of the same shape, in the same file, is still reported.
+[[allowlists]]
+description = "Hook-probe JWT fixture"
+regexes = ['''^eyJhbGciOiJIUzI1NiJ9\.eyJzdWIiOiJwcm9iZSJ9\.probeSignatureValue9$''']

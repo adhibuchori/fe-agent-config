@@ -1,0 +1,52 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    # dev is the review gate; prod re-runs it as a safety net on promotion.
+    # Diff steps compare against origin/<base branch>, so they follow it.
+    branches: [dev, prod]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    # The pull-request gate is the one job a person waits on, so it takes the fast pool first.
+    runs-on: ${{ vars.CI_RUNNER_FAST || vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 20
+
+    env:
+      # Build-time only — the Production Build step needs these set, not a live BE.
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Exact releases, so a run changes only when this file does (SETUP.md §8).
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+
+      # Only the Skill Security Scan uses it, to install the pinned SkillSpector.
+      - name: Setup uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: 0.12.17
+
+      # CI=true on the runner turns on strict mode: a check that cannot run
+      # fails the gate instead of silently passing. See quality-gate.sh.
+      - name: Quality Gate
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: .github/scripts/quality-gate.sh "origin/${BASE_REF}"

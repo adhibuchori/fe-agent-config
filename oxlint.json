@@ -1,0 +1,151 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "nextjs", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "react/jsx-key": "error",
+    "react/no-array-index-key": "warn",
+    "react/self-closing-comp": "warn",
+    "react/no-danger": "error",
+    "react/jsx-boolean-value": "warn",
+    "react/display-name": "warn",
+    "react/react-in-jsx-scope": "off",
+    // AGENTS.md Rule 31, in tests too.
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": "warn",
+    "typescript/ban-ts-comment": "warn",
+    "typescript/no-non-null-assertion": "warn",
+    "typescript/consistent-type-exports": "warn",
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-has-content": "error",
+    "jsx-a11y/aria-props": "error",
+    "jsx-a11y/aria-role": "error",
+    "jsx-a11y/img-redundant-alt": "warn",
+    "jsx-a11y/interactive-supports-focus": "warn",
+    "jsx-a11y/label-has-associated-control": "error",
+    "jsx-a11y/no-autofocus": "warn",
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "nextjs/no-img-element": "error",
+    "nextjs/no-html-link-for-pages": "error",
+    "unicorn/prefer-string-slice": "warn",
+    "unicorn/no-array-for-each": "warn",
+    "unicorn/prefer-logical-operator-over-ternary": "warn",
+    "no-console": "warn",
+    // SSOT.md §4.1 declares the layer map. The import plugin, this rule and the
+    // no-restricted-imports overrides below are what make its arrows real.
+    "import/no-cycle": "error",
+    // A stylesheet or a polyfill is imported for its side effect and has nothing to assign.
+    "import/no-unassigned-import": "off",
+    "max-depth": ["error", 4],
+    "no-await-in-loop": "error",
+    // AGENTS.md Rule 27. An error, not a warning: a warning lets a file sit over the limit and
+    // commit clean.
+    "max-lines": ["error", { "max": 150, "skipBlankLines": true, "skipComments": true }]
+  },
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "es2022": true
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "src/lib/api/generated/",
+    ".agents/**",
+    ".claude/**",
+    ".serena/**",
+    ".vscode/**"
+  ],
+  "overrides": [
+    // AGENTS.md Rules 6 and 32: a component renders; it never reaches for data or global state
+    // itself. Each of these arrives through a named hook, which is also what makes it testable
+    // without rendering. Rule 14 covers the generated client specifically.
+    {
+      "files": ["src/components/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/lib/api/generated",
+                  "@/lib/api/generated/**",
+                  "**/lib/api/generated/**"
+                ],
+                "message": "Components must not name a server DTO. Take the view model from src/types/ and let the hook map it (AGENTS.md Rule 14)."
+              },
+              {
+                "group": ["@/store", "@/store/**", "**/store/**"],
+                "message": "Read the store through a named hook, however small the read (AGENTS.md Rule 6)."
+              },
+              {
+                "group": ["@/lib/api/client/**", "**/lib/api/client/**"],
+                "message": "A transport belongs behind a service hook in src/hooks/api/ (AGENTS.md §D)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    // SSOT.md §4.1: utilities are pure and sit below everything. The dependency direction never
+    // reverses, which is what lets a hook import a helper without dragging a component with it.
+    {
+      "files": ["src/lib/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/components/**", "@/hooks/**", "**/components/**", "**/hooks/**"],
+                "message": "src/lib/ is the bottom layer: pure functions, no imports from UI or hooks (SSOT.md §4.1)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    // AGENTS.md Rule 7: a hook may import lib, store and types, never a component.
+    {
+      "files": ["src/hooks/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/components/**", "**/components/**"],
+                "message": "A hook never imports a component (AGENTS.md Rule 7)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    // A test awaits one step after another on purpose: a render, then an event, then its result.
+    {
+      "files": ["src/testing/**"],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    },
+    {
+      "files": ["scripts/**", ".github/scripts/**"],
+      "rules": {
+        "no-console": "off",
+        "max-lines": "off",
+        "no-underscore-dangle": "off",
+        // `[...x].sort()` rather than `toSorted()`, so the checkers also run where the tsconfig
+        // lib stops at ES2022.
+        "unicorn/no-array-sort": "off",
+        // These walk nested trees: directories, then files, then matches within a file. The
+        // nesting is the shape of the data, not a tangled branch in application logic.
+        "max-depth": "off"
+      }
+    }
+  ]
+}

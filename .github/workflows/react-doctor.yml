@@ -1,0 +1,37 @@
+# React Doctor: security, performance, correctness, accessibility, and
+# architecture checks for React. Advisory only — never fails the check.
+
+name: React Doctor
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [dev, prod]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: react-doctor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  react-doctor:
+    name: React Doctor
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    permissions:
+      contents: read # scan the checked-out code
+      pull-requests: write # inline review comments on the changed lines
+      issues: write # the sticky summary comment on the pull request
+      statuses: write # the commit status with the score
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2 # v2.2.8
+        with:
+          # The same CLI release .claude/skills/react-doctor pins; raise both together.
+          version: 0.9.14

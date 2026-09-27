@@ -1,0 +1,31 @@
+# This repo's gates: `bash scripts/check/gates.sh` runs them, and so does .husky/pre-commit.
+# <kinds><TAB><command>. Kinds pick the gates a commit needs from what it stages; see gates.sh.
+# Every package script named here is in the template's SETUP.md §5 (https://github.com/adhibuchori/fe-agent-config/blob/main/SETUP.md#5-make-the-gates-runnable).
+# List only what this repo ships: a missing script fails its gate.
+all	@format
+all	gitleaks git --staged --no-banner --redact --config .gitleaks.toml
+code	bun run type-check
+code	bun run check:dead-code
+code	bash scripts/check/double-assertion.sh
+code	node scripts/check/folder-shape.mjs
+code	node scripts/check/coverage-policy.mjs
+code	bun run test:coverage
+code	bun run check:i18n
+code	bun run check:hooks
+code	bun run check:reexport
+code	bun run check:soc
+code	bun run check:tailwind
+code	bun run check:error-codes
+code	bun run check:error-catch
+code	bun run .github/scripts/check-comment-style.ts
+code	bash .github/scripts/check-comment-blocks.sh
+# Optional modules: a repo that does not adopt one deletes its line with its rule and standard.
+code	bun run check:dialog-desc
+code	bun run check:responsive
+code	bun run check:skeleton-switch
+all	bash scripts/check/ai-config.sh
+code	bash scripts/check/ai-config-probes.sh
+docs	bash scripts/sync/rules.sh --check
+commands	bash scripts/sync/workflows.sh --check
+hooks	bash scripts/check/hook-probes.sh
+commands,hooks	bash scripts/check/skills.sh --staged

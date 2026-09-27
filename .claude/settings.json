@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(bun run:*)",
+      "Bash(bun fl:*)",
+      "Bash(bun check:*)",
+      "Bash(bun run test:*)",
+      "Bash(bun generate:api:*)",
+      "Read(**)"
+    ],
+    "ask": [
+      "mcp__db-prod__execute_sql",
+      "Edit(.claude/agent-config.json)",
+      "Edit(.claude/agent-config-kit.lock)",
+      "Edit(scripts/ops/unlock.sh)",
+      "Edit(scripts/env/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push origin dev:*)",
+      "Bash(git push origin prod:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin master:*)",
+      "Edit(.env*)",
+      "Edit(!.env*.example)",
+      "Edit(SSOT.md)",
+      "Edit(AGENTS.md)",
+      "Edit(PRODUCT.md)",
+      "Edit(.claude/state/**)",
+      "Read(.env*)",
+      "Read(!.env*.example)",
+      "Read(.claude/state/env-backups/**)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "excludedCommands": [
+      "bash scripts/env/show.sh*",
+      "bash scripts/env/set.sh*",
+      "./scripts/env/show.sh*",
+      "./scripts/env/set.sh*",
+      "scripts/env/show.sh*",
+      "scripts/env/set.sh*"
+    ],
+    "filesystem": {
+      "denyRead": [
+        ".env",
+        ".env.*",
+        ".env-*",
+        ".env_*",
+        ".envrc",
+        "./**/.env",
+        "./**/.env.*",
+        "./**/.env-*",
+        "./**/.env_*",
+        "./**/.envrc",
+        ".claude/state/env-backups",
+        ".claude/state/env-backups/**"
+      ],
+      "allowRead": [
+        ".env.example",
+        ".env.*.example",
+        ".env-*.example",
+        ".env_*.example",
+        "./**/.env.example",
+        "./**/.env.*.example",
+        "./**/.env-*.example",
+        "./**/.env_*.example"
+      ],
+      "denyWrite": [".claude/state/unlock", ".claude/state/unlock/**"]
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\" || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt-intent.sh\" || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/safety-check.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__db-prod__execute_sql",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/db-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__github__(push_files|create_or_update_file|delete_file|create_branch)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/mcp-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|mcp__serena__(replace_content|replace_symbol_body|insert_after_symbol|insert_before_symbol|replace_in_files|rename_symbol|safe_delete_symbol)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/generated-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-commit.sh\"",
+            "timeout": 20
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|mcp__serena__(replace_content|replace_symbol_body|insert_after_symbol|insert_before_symbol|replace_in_files|rename_symbol|safe_delete_symbol)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit.sh\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

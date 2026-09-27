@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" role="img" aria-labelledby="t d">
+<title id="t">Five layers</title>
+<desc id="d">Five stacked cards: Router (CLAUDE.md), Guardrail (AGENTS.md), Contract (SSOT.md), Machine (.claude/ hooks, rules, commands) and Gate (.github/ CI), with the hedgehog mascot beside the stack.</desc>
+<defs>
+<style>.s{font-family:'Plus Jakarta Sans', system-ui, sans-serif}.m{font-family:ui-monospace, 'SF Mono', Menlo, Consolas, monospace;font-variant-ligatures:none}</style>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="140%">
+<feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#1c1a15" flood-opacity="0.08"/>
+</filter>
+</defs>
+<clipPath id="cc">
+<rect x="1" y="1" width="1098" height="698" rx="28"/>
+</clipPath>
+<rect x="1" y="1" width="1098" height="698" rx="28" fill="#fbfaf7" stroke="#e8e4da" stroke-width="2"/>
+<text class="s" x="60" y="78" font-size="34" font-weight="800" fill="#1c1a15">Five layers, one job each</text>
+<text class="s" x="60" y="112" font-size="19" font-weight="500" fill="#57534a">Read top-down: the agent is routed, ruled, informed, enforced, then gated.</text>
+<circle cx="960" cy="416" r="104" fill="#fce7f3" opacity="1"/>
+<path d="M1000,246Q1002.8,253.2 1010,256Q1002.8,258.8 1000,266Q997.2,258.8 990,256Q997.2,253.2 1000,246Z" fill="#818cf8" opacity="1"/>
+<path d="M1052,592Q1054.2,597.8 1060,600Q1054.2,602.2 1052,608Q1049.8,602.2 1044,600Q1049.8,597.8 1052,592Z" fill="#7dd3fc" opacity="1"/>
+<g transform="translate(836 312) scale(1.0)">
+<defs>
+<radialGradient id="mg" cx="50%" cy="60%" r="55%">
+<stop offset="0" stop-color="#a5b4fc"/>
+<stop offset="1" stop-color="#818cf8"/>
+</radialGradient>
+</defs>
+<ellipse cx="110" cy="200" rx="70" ry="8" fill="#1c1a15" opacity="0.10"/>
+<path d="M110,130L40.7,141.6Q3.9,145.9 35.1,127.2Q-1.8,124.1 32.9,112Q-2.4,101.7 34.2,96.7Q2,79.6 39,82Q11.3,58.9 46.9,68.6Q25.1,40.5 57.7,57Q42.7,25.3 70.8,47.8Q63.4,13.8 85.8,41.5Q86.1,6.8 101.8,38.2Q110,4.4 118.2,38.2Q133.9,6.8 134.2,41.5Q156.6,13.8 149.2,47.8Q177.3,25.3 162.3,57Q194.9,40.5 173.1,68.6Q208.7,58.9 181,82Q218,79.6 185.8,96.7Q222.4,101.7 187.1,112Q221.8,124.1 184.9,127.2Q216.1,145.9 179.3,141.6Z" fill="url(#mg)" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M51.7,92.2L40.5,88.4" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M65.4,71.7L56.8,64.1" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M86.8,58.2L82.3,48" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M133.2,58.2L137.7,48" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M154.6,71.7L163.2,64.1" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M168.3,92.2L179.5,88.4" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<circle cx="62" cy="74" r="14" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="62" cy="75" r="7" fill="#f9a8d4"/>
+<circle cx="158" cy="74" r="14" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="158" cy="75" r="7" fill="#f9a8d4"/>
+<ellipse cx="82" cy="186" rx="18" ry="10" fill="#ffe3d3" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="138" cy="186" rx="18" ry="10" fill="#ffe3d3" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="110" cy="124" rx="66" ry="60" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M80,80Q84,60 96,70Q104,52 112,66Q122,52 126,70Q140,60 142,80Q128,74 110,77Q92,74 80,80Z" fill="url(#mg)" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="74" cy="140" rx="11" ry="6.5" fill="#f9a8d4" opacity=".8"/>
+<ellipse cx="146" cy="140" rx="11" ry="6.5" fill="#f9a8d4" opacity=".8"/>
+<ellipse cx="88" cy="119" rx="7.5" ry="9.5" fill="#1c1a15"/>
+<circle cx="90.6" cy="115" r="3" fill="#ffffff"/>
+<circle cx="85.6" cy="123.5" r="1.4" fill="#ffffff" opacity=".8"/>
+<ellipse cx="132" cy="119" rx="7.5" ry="9.5" fill="#1c1a15"/>
+<circle cx="134.6" cy="115" r="3" fill="#ffffff"/>
+<circle cx="129.6" cy="123.5" r="1.4" fill="#ffffff" opacity=".8"/>
+<ellipse cx="110" cy="138" rx="15" ry="11" fill="#ffe3d3"/>
+<ellipse cx="110" cy="132.5" rx="6" ry="4.5" fill="#1c1a15"/>
+<path d="M102.5,142.5q3.75,4.5 7.5,0q3.75,4.5 7.5,0" fill="none" stroke="#1c1a15" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="50" cy="152" rx="9" ry="10.5" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" transform="rotate(-25 46 150)"/>
+<circle cx="184" cy="160" r="22" fill="#4f46e5" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M174,160l7,7l13,-14" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="162" cy="170" r="9.5" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<path d="M104,190V630" stroke="#e8e4da" stroke-width="4" stroke-dasharray="2 9" stroke-linecap="round"/>
+<rect x="60" y="146" width="820" height="88" rx="18" fill="#ffffff" stroke="#e8e4da" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="60" y="146" width="14" height="88" rx="7" fill="#818cf8"/>
+<circle cx="110" cy="190" r="20" fill="#e0e7ff" stroke="#c7d2fe" stroke-width="1.5"/>
+<text class="s" x="110" y="197" font-size="20" font-weight="800" fill="#1c1a15" text-anchor="middle">1</text>
+<text class="s" x="148" y="181" font-size="22" font-weight="800" fill="#1c1a15">Router</text>
+<rect x="232.9" y="160" width="102.3" height="31" rx="15.5" fill="#f4f2ed" stroke="#e2ddd2" stroke-width="1.5"/>
+<text class="m" x="284.1" y="180.8" font-size="15" font-weight="600" fill="#1c1a15" text-anchor="middle">CLAUDE.md</text>
+<text class="s" x="148" y="214" font-size="17" font-weight="500" fill="#57534a">What to read for which task. Short on purpose.</text>
+<rect x="60" y="256" width="820" height="88" rx="18" fill="#ffffff" stroke="#e8e4da" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="60" y="256" width="14" height="88" rx="7" fill="#f9a8d4"/>
+<circle cx="110" cy="300" r="20" fill="#fce7f3" stroke="#fbcfe8" stroke-width="1.5"/>
+<text class="s" x="110" y="307" font-size="20" font-weight="800" fill="#1c1a15" text-anchor="middle">2</text>
+<text class="s" x="148" y="291" font-size="22" font-weight="800" fill="#1c1a15">Guardrail</text>
+<rect x="259.2" y="270" width="102.3" height="31" rx="15.5" fill="#f4f2ed" stroke="#e2ddd2" stroke-width="1.5"/>
+<text class="m" x="310.3" y="290.8" font-size="15" font-weight="600" fill="#1c1a15" text-anchor="middle">AGENTS.md</text>
+<text class="s" x="148" y="324" font-size="17" font-weight="500" fill="#57534a">Numbered, citable rules every agent follows.</text>
+<rect x="60" y="366" width="820" height="88" rx="18" fill="#ffffff" stroke="#e8e4da" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="60" y="366" width="14" height="88" rx="7" fill="#7dd3fc"/>
+<circle cx="110" cy="410" r="20" fill="#e0f2fe" stroke="#bae6fd" stroke-width="1.5"/>
+<text class="s" x="110" y="417" font-size="20" font-weight="800" fill="#1c1a15" text-anchor="middle">3</text>
+<text class="s" x="148" y="401" font-size="22" font-weight="800" fill="#1c1a15">Contract</text>
+<rect x="255" y="380" width="84" height="31" rx="15.5" fill="#f4f2ed" stroke="#e2ddd2" stroke-width="1.5"/>
+<text class="m" x="297.0" y="400.8" font-size="15" font-weight="600" fill="#1c1a15" text-anchor="middle">SSOT.md</text>
+<text class="s" x="148" y="434" font-size="17" font-weight="500" fill="#57534a">What the codebase is: layers, naming, API, env.</text>
+<rect x="60" y="476" width="820" height="88" rx="18" fill="#ffffff" stroke="#e8e4da" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="60" y="476" width="14" height="88" rx="7" fill="#818cf8"/>
+<circle cx="110" cy="520" r="20" fill="#e0e7ff" stroke="#c7d2fe" stroke-width="1.5"/>
+<text class="s" x="110" y="527" font-size="20" font-weight="800" fill="#1c1a15" text-anchor="middle">4</text>
+<text class="s" x="148" y="511" font-size="22" font-weight="800" fill="#1c1a15">Machine</text>
+<rect x="251.4" y="490" width="93.2" height="31" rx="15.5" fill="#f4f2ed" stroke="#e2ddd2" stroke-width="1.5"/>
+<text class="m" x="298.0" y="510.8" font-size="15" font-weight="600" fill="#1c1a15" text-anchor="middle">.claude/</text>
+<text class="s" x="148" y="544" font-size="17" font-weight="500" fill="#57534a">Hooks, rules and commands that enforce it.</text>
+<rect x="60" y="586" width="820" height="88" rx="18" fill="#ffffff" stroke="#e8e4da" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="60" y="586" width="14" height="88" rx="7" fill="#f9a8d4"/>
+<circle cx="110" cy="630" r="20" fill="#fce7f3" stroke="#fbcfe8" stroke-width="1.5"/>
+<text class="s" x="110" y="637" font-size="20" font-weight="800" fill="#1c1a15" text-anchor="middle">5</text>
+<text class="s" x="148" y="621" font-size="22" font-weight="800" fill="#1c1a15">Gate</text>
+<rect x="211.8" y="600" width="93.2" height="31" rx="15.5" fill="#f4f2ed" stroke="#e2ddd2" stroke-width="1.5"/>
+<text class="m" x="258.4" y="620.8" font-size="15" font-weight="600" fill="#1c1a15" text-anchor="middle">.github/</text>
+<text class="s" x="148" y="654" font-size="17" font-weight="500" fill="#57534a">CI checks that define a passing pull request.</text>
+</svg>

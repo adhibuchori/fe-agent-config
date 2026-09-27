@@ -1,0 +1,41 @@
+---
+paths:
+  - 'src/hooks/**'
+  - 'src/components/**'
+  - 'src/testing/**'
+---
+
+# ORG — File Organization
+
+A file's folder says which feature it belongs to, and the same feature has the same name in every
+layer. Enforced by `bun run check:hooks` in pre-commit and the quality gate — it blocks. These are
+the binding rules behind `AGENTS.md` Rule 30; worked examples are in
+`.claude/docs/standards/file-organization.md`. `common/folder-shape.md` applies underneath.
+
+The vocabulary is `src/components/`, which already names every feature. Directories are
+kebab-case; files keep their layer's convention (hooks camelCase, components kebab-case).
+
+## Hook folders
+
+1. Nothing sits loose in `src/hooks/` — not a hook, and not a barrel: re-exports are refused by `check:reexport`. (HOOK-1)
+2. The folder mirrors `src/components/`, including an app namespace: `components/<ns>/<feature>/` pairs with `hooks/<ns>/<feature>/`. (HOOK-2)
+3. Three folders are not features: `api/` (TanStack Query service hooks), `shared/` (no domain vocabulary, or consumers in two or more features), `ui/` (belongs to a `components/ui/` primitive). Looking generic is not the test.
+4. The test moves with the hook: `src/testing/hooks/` mirrors `src/hooks/` exactly, in the same commit. An orphaned test stops running without failing anything — count test files before and after. (HOOK-3)
+5. Hook filenames are globally unique: the docs generator keys on the basename. (HOOK-4)
+6. Imports inside `src/hooks/` are absolute (`@/hooks/shared/useFlag`).
+
+## Feature folders
+
+7. A feature folder is named after its route segment (`auth/forgot-password/` answers `(auth)/forgot-password/`), including a feature whose route sits outside its group.
+8. No component sits loose in a feature root; the root holds folders only.
+9. `<root>/shared/` holds what two or more **sibling** features import. One consumer means it lives in that consumer's folder, however reusable it looks.
+10. `shell/` is layout chrome consumed only by `layout.tsx`, never `shared/`.
+11. A part used from **outside** the feature root moves to the repo's cross-cutting home, `src/components/shared/<system>/` unless `SSOT.md` §4.3 names another, and is named for the system it implements (`shared/modal/`, `shared/credentials/`), never `shared/misc/`. `shared/` is composed systems; `ui/` is primitives.
+12. Imports inside a feature root are absolute. Convert relative imports in their own commit **before** splitting a folder: an escaping `../` breaks at build time, not at move time.
+
+## Screen folders
+
+13. A screen lives inside the folder that holds its parts, never beside it.
+14. Only the screen moves in; parts stay. Never pull a parts folder inside a screen folder to tidy the tree.
+15. A parts folder composed by two or more screens stands on its own and is named for itself.
+16. Several screens of one domain may share one folder with the parts they all compose.

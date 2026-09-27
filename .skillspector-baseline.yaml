@@ -1,0 +1,54 @@
+# SkillSpector triage record for scripts/check/skills.sh. Every entry is something this gate stops
+# reporting, so each one is added by hand, after reading the flagged text or file.
+# SkillSpector reads `rules`; scripts/check/skills.sh reads `vendored` and `partial`.
+version: 2
+scanner_version: '2.11.2'
+
+# Narrow suppressions for first-party content (commands, subagents, hooks, skills written here).
+# One entry per finding: the finding id, the file it points at, the exact matched text, and why it
+# is not a risk. Never suppress a whole file or a whole finding id.
+#
+#   - id: <finding id from the report, e.g. PE3>
+#     path: <file name the finding points at, e.g. review.md>
+#     message: '<the exact text SkillSpector matched>'
+#     reason: <what the text does, verified by reading it, and why that is safe>
+rules: []
+
+# Third-party skill trees, accepted as the exact tree hashed here (every git-visible file under
+# `target`). An upgrade changes the hash and fails the gate until its findings are triaged again;
+# scripts/check/skills.sh prints the new hash.
+#
+#   - target: <.agents/skills/<name> or .claude/skills/<name>>
+#     sha256: <tree hash printed by scripts/check/skills.sh>
+#     reason: <upstream source and version, and why each finding is accepted>
+vendored: []
+
+# Files SkillSpector inspected only in part (a non-fatal ledger entry). skills.sh fails on each one
+# unless an entry names the exact target, path (as the report prints it) and reason_code. An entry
+# that matches nothing in a scanned target prints a warning; remove it.
+#
+#   - target: <scan target, e.g. .claude/hooks>
+#     path: <file inside the target, e.g. lib.sh>
+#     reason_code: <reason_code from the report's ledger entry>
+#     reason: <why the part left unread holds no risk, verified by reading it>
+partial:
+  - target: .claude/hooks
+    path: lib.sh
+    reason_code: obfuscated_instruction_text
+    reason: >-
+      The declared-marker projection gives up on the backtick characters in the command analyzer's
+      Python (the lexer's handling of backquoted commands). Those are shell-parsing code, not
+      instructions; YARA, artifact integrity, data exfiltration and output handling complete on the
+      file. Hiding the backticks from the scanner would be obfuscation in earnest.
+  # lib.sh embeds the hooks' shell-command analyzer as Python in a quoted heredoc (HOOK_ANALYZER):
+  # thousands of lines of lexer and rule code that one scanner reads as a single expression.
+  - target: .claude/hooks
+    path: lib.sh
+    reason_code: static_parse_limit
+    reason: >-
+      Only static_patterns_tool_misuse stops early, on the embedded command analyzer: the Python
+      program lib.sh holds in a quoted heredoc and feeds to python3, which is longer than that
+      pattern's span limit. It is the hooks' own rule code (a shell lexer and refusal rules that
+      print verdict lines and record the HEAD a commit starts from), proven by
+      scripts/check/hook-probes.sh on every change; it opens no network connection and starts no
+      program but git. The other analyzers complete on the file.

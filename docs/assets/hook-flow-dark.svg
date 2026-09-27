@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 490" role="img" aria-labelledby="t d">
+<title id="t">How a hook decides</title>
+<desc id="d">The hedgehog inspects each command. 'git push --force origin main' is blocked with exit code 2 and the agent is told why; 'git status' is allowed with exit code 0.</desc>
+<defs>
+<style>.s{font-family:'Plus Jakarta Sans', system-ui, sans-serif}.m{font-family:ui-monospace, 'SF Mono', Menlo, Consolas, monospace;font-variant-ligatures:none}.eye,.mag,.ar,.blk,.alw,.minus,.chk,.band{transform-box:fill-box}.eye{transform-origin:50% 50%;animation:blink 4.6s ease-in-out infinite}@keyframes blink{0%,93%,96%,100%{transform:scaleY(1)}94%,95%{transform:scaleY(.1)}}.ring{opacity:0;animation:ring 7s ease-in-out infinite}@keyframes ring{0%,4.29%,25.71%,100%{opacity:0}8.57%,20%{opacity:1}}.band{opacity:0;animation:scan 7s ease-in-out infinite}@keyframes scan{0%,5.71%{opacity:0;transform:translateX(-90px)}7.86%,16.43%{opacity:1}18.57%,100%{opacity:0;transform:translateX(340px)}}.hl{opacity:0;animation:hl 7s ease-in-out infinite}@keyframes hl{0%,12.86%,20.71%,100%{opacity:0}16.43%{opacity:1}}.a1{animation:a1 7s ease-in-out infinite}@keyframes a1{0%,12.86%,20.71%,100%{transform:translate(0,0)}16.43%{transform:translate(2.2px,2.0px)}}.a2{animation:a2 7s ease-in-out infinite}@keyframes a2{0%,12.86%,20.71%,100%{transform:translate(0,0)}16.43%{transform:translate(2.2px,-2.0px)}}.a3{animation:a3 7s ease-in-out infinite}@keyframes a3{0%,12.86%,20.71%,100%{transform:translate(0,0)}16.43%{transform:translate(1.8px,-2.4px)}}.a4{animation:a4 7s ease-in-out infinite}@keyframes a4{0%,12.86%,20.71%,100%{transform:translate(0,0)}16.43%{transform:translate(1.8px,2.4px)}}.a2,.a2 .hl{animation-delay:.6s}.a3,.a3 .hl{animation-delay:2.9s}.a4,.a4 .hl{animation-delay:3.5s}.b2 .ring,.b2 .band{animation-delay:2.9s}.mag{transform-origin:2px 68px;animation:tilt 7s ease-in-out infinite}@keyframes tilt{0%,14.29%,32.86%,55.71%,74.29%,100%{transform:rotate(0deg)}19.29%,27.14%{transform:rotate(-7deg)}60.71%,68.57%{transform:rotate(6deg)}}.blk,.alw{transform-origin:50% 50%;animation:pop 7s ease-in-out infinite}@keyframes pop{0%,24.29%,35.71%,100%{transform:scale(1)}29.29%{transform:scale(1.03)}}.glow{opacity:0;animation:glow 7s ease-in-out infinite}@keyframes glow{0%,24.29%,40%,100%{opacity:0}29.29%,32.86%{opacity:.75}}.alw,.alw .glow{animation-delay:2.9s}.minus{transform-origin:50% 50%;animation:shake 7s ease-in-out infinite}@keyframes shake{0%,29.29%,36.43%,100%{transform:translateX(0) rotate(0deg)}30.71%{transform:translateX(-4px) rotate(-4deg)}32.14%{transform:translateX(4px) rotate(4deg)}33.57%{transform:translateX(-3px) rotate(-3deg)}35%{transform:translateX(2px) rotate(2deg)}}.chk{transform-origin:50% 50%;animation:chk 7s ease-in-out 2.9s infinite}@keyframes chk{0%,29.29%,36.43%,100%{transform:scale(1)}31.71%{transform:scale(1.18)}34.29%{transform:scale(.96)}}.glint{animation:glint 4.6s ease-in-out infinite}@keyframes glint{0%,93%,96%,100%{opacity:1}93.6%,95.4%{opacity:0}}@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important}}</style>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="140%">
+<feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+</filter>
+<filter id="gl" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="10"/></filter>
+<linearGradient id="sg" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#a5b4fc" stop-opacity="0"/><stop offset=".5" stop-color="#a5b4fc" stop-opacity=".36"/><stop offset="1" stop-color="#a5b4fc" stop-opacity="0"/></linearGradient>
+<clipPath id="p1"><rect x="80" y="222" width="340" height="36" rx="10"/></clipPath>
+<clipPath id="p2"><rect x="80" y="382" width="340" height="36" rx="10"/></clipPath>
+</defs>
+<clipPath id="cc">
+<rect x="1" y="1" width="1198" height="488" rx="28"/>
+</clipPath>
+<rect x="1" y="1" width="1198" height="488" rx="28" fill="#16140f" stroke="#37322a" stroke-width="2"/>
+<text class="s" x="60" y="78" font-size="34" font-weight="800" fill="#f4f1eb">How a hook decides</text>
+<text class="s" x="60" y="112" font-size="19" font-weight="500" fill="#d2ccc0">Every command the agent tries passes a PreToolUse hook first.</text>
+<g class="b1">
+<rect x="60" y="176" width="380" height="96" rx="18" fill="#211e18" stroke="#37322a" stroke-width="1.5" filter="url(#sh)"/>
+<text class="s" x="84" y="210" font-size="15" font-weight="600" fill="#d2ccc0">agent wants to run</text>
+<rect x="80" y="222" width="340" height="36" rx="10" fill="#2a261f" stroke="#3d372d" stroke-width="1.5"/>
+<g clip-path="url(#p1)"><rect class="band" x="80" y="222" width="90" height="36" fill="url(#sg)"/></g>
+<text class="m" x="96" y="246" font-size="17" font-weight="600" fill="#f4f1eb">$ git push --force origin main</text>
+<rect class="ring" x="60" y="176" width="380" height="96" rx="18" fill="none" stroke="#a5b4fc" stroke-width="2.5"/>
+</g>
+<g class="b2">
+<rect x="60" y="336" width="380" height="96" rx="18" fill="#211e18" stroke="#37322a" stroke-width="1.5" filter="url(#sh)"/>
+<text class="s" x="84" y="370" font-size="15" font-weight="600" fill="#d2ccc0">agent wants to run</text>
+<rect x="80" y="382" width="340" height="36" rx="10" fill="#2a261f" stroke="#3d372d" stroke-width="1.5"/>
+<g clip-path="url(#p2)"><rect class="band" x="80" y="382" width="90" height="36" fill="url(#sg)"/></g>
+<text class="m" x="96" y="406" font-size="17" font-weight="600" fill="#f4f1eb">$ git status</text>
+<rect class="ring" x="60" y="336" width="380" height="96" rx="18" fill="none" stroke="#a5b4fc" stroke-width="2.5"/>
+</g>
+<circle cx="600" cy="300" r="118" fill="#2a2946" opacity="0.5"/>
+<g transform="translate(482 192) scale(1.0)">
+<defs>
+<radialGradient id="mg" cx="50%" cy="60%" r="55%">
+<stop offset="0" stop-color="#a5b4fc"/>
+<stop offset="1" stop-color="#818cf8"/>
+</radialGradient>
+</defs>
+<ellipse cx="110" cy="200" rx="70" ry="8" fill="#000000" opacity="0.45"/>
+<path d="M110,130L40.7,141.6Q3.9,145.9 35.1,127.2Q-1.8,124.1 32.9,112Q-2.4,101.7 34.2,96.7Q2,79.6 39,82Q11.3,58.9 46.9,68.6Q25.1,40.5 57.7,57Q42.7,25.3 70.8,47.8Q63.4,13.8 85.8,41.5Q86.1,6.8 101.8,38.2Q110,4.4 118.2,38.2Q133.9,6.8 134.2,41.5Q156.6,13.8 149.2,47.8Q177.3,25.3 162.3,57Q194.9,40.5 173.1,68.6Q208.7,58.9 181,82Q218,79.6 185.8,96.7Q222.4,101.7 187.1,112Q221.8,124.1 184.9,127.2Q216.1,145.9 179.3,141.6Z" fill="url(#mg)" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M51.7,92.2L40.5,88.4" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M65.4,71.7L56.8,64.1" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M86.8,58.2L82.3,48" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M133.2,58.2L137.7,48" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M154.6,71.7L163.2,64.1" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M168.3,92.2L179.5,88.4" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<circle cx="62" cy="74" r="14" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="62" cy="75" r="7" fill="#f9a8d4"/>
+<circle cx="158" cy="74" r="14" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="158" cy="75" r="7" fill="#f9a8d4"/>
+<ellipse cx="82" cy="186" rx="18" ry="10" fill="#ffe3d3" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="138" cy="186" rx="18" ry="10" fill="#ffe3d3" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="110" cy="124" rx="66" ry="60" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M80,80Q84,60 96,70Q104,52 112,66Q122,52 126,70Q140,60 142,80Q128,74 110,77Q92,74 80,80Z" fill="url(#mg)" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="74" cy="140" rx="11" ry="6.5" fill="#f9a8d4" opacity=".8"/>
+<ellipse cx="146" cy="140" rx="11" ry="6.5" fill="#f9a8d4" opacity=".8"/>
+<g class="eye">
+<ellipse cx="88" cy="119" rx="7.5" ry="9.5" fill="#1c1a15"/>
+<g class="glint">
+<circle cx="90.6" cy="115" r="3" fill="#ffffff"/>
+<circle cx="85.6" cy="123.5" r="1.4" fill="#ffffff" opacity=".8"/>
+</g>
+</g>
+<g class="eye">
+<ellipse cx="132" cy="119" rx="7.5" ry="9.5" fill="#1c1a15"/>
+<g class="glint">
+<circle cx="134.6" cy="115" r="3" fill="#ffffff"/>
+<circle cx="129.6" cy="123.5" r="1.4" fill="#ffffff" opacity=".8"/>
+</g>
+</g>
+<ellipse cx="110" cy="138" rx="15" ry="11" fill="#ffe3d3"/>
+<ellipse cx="110" cy="132.5" rx="6" ry="4.5" fill="#1c1a15"/>
+<path d="M102.5,142.5q3.75,4.5 7.5,0q3.75,4.5 7.5,0" fill="none" stroke="#1c1a15" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="50" cy="152" rx="9" ry="10.5" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" transform="rotate(-25 46 150)"/>
+<g class="mag">
+<path d="M168,152L150,176" stroke="#1c1a15" stroke-width="10" stroke-linecap="round"/>
+<path d="M168,152L150,176" stroke="#818cf8" stroke-width="4.5" stroke-linecap="round"/>
+<circle cx="184" cy="128" r="24" fill="#e0f2fe" stroke="#1c1a15" stroke-width="3.2"/>
+<circle cx="184" cy="128" r="19" fill="none" stroke="#4f46e5" stroke-width="5"/>
+<path d="M174,120q4,-7 12,-7" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+<circle cx="152" cy="172" r="9.5" fill="#fff1e6" stroke="#1c1a15" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="516" y="420" width="158" height="31" rx="15.5" fill="#211e18" stroke="#37322a" stroke-width="1.5"/>
+<text class="s" x="595" y="440.8" font-size="15" font-weight="600" fill="#f4f1eb" text-anchor="middle">PreToolUse hook</text>
+<g class="ar a1">
+<path d="M446,224L488,262M479.2,259.9L488,262L485,253.5" fill="none" stroke="#d2ccc0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="hl" d="M446,224L488,262M479.2,259.9L488,262L485,253.5" fill="none" stroke="#a5b4fc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g class="ar a3">
+<path d="M446,384L488,330M486.6,338.9L488,330L479.7,333.6" fill="none" stroke="#d2ccc0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="hl" d="M446,384L488,330M486.6,338.9L488,330L479.7,333.6" fill="none" stroke="#a5b4fc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g class="ar a2">
+<path d="M728,262L770,224M767,232.5L770,224L761.2,226.1" fill="none" stroke="#d2ccc0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="hl" d="M728,262L770,224M767,232.5L770,224L761.2,226.1" fill="none" stroke="#a5b4fc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g class="ar a4">
+<path d="M728,330L770,384M761.7,380.4L770,384L768.6,375.1" fill="none" stroke="#d2ccc0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="hl" d="M728,330L770,384M761.7,380.4L770,384L768.6,375.1" fill="none" stroke="#a5b4fc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g class="blk">
+<rect class="glow" x="780" y="176" width="360" height="96" rx="18" fill="#f9a8d4" filter="url(#gl)"/>
+<rect x="780" y="176" width="360" height="96" rx="18" fill="#3b2431" stroke="#f9a8d4" stroke-width="1.5" filter="url(#sh)"/>
+<g class="minus">
+<circle cx="826" cy="224" r="22" fill="#ec4899" stroke="#ffffff" stroke-width="2.5"/>
+<rect x="814" y="220" width="24" height="8" rx="3" fill="#ffffff"/>
+</g>
+<text class="s" x="864" y="218" font-size="24" font-weight="800" fill="#f4f1eb">Blocked</text>
+<text class="s" x="864" y="246" font-size="16" font-weight="500" fill="#f4f1eb">exit 2 · the agent is told why</text>
+</g>
+<g class="alw">
+<rect class="glow" x="780" y="336" width="360" height="96" rx="18" fill="#7dd3fc" filter="url(#gl)"/>
+<rect x="780" y="336" width="360" height="96" rx="18" fill="#15303c" stroke="#7dd3fc" stroke-width="1.5" filter="url(#sh)"/>
+<g class="chk">
+<circle cx="826" cy="384" r="22" fill="#0284c7" stroke="#ffffff" stroke-width="2.5"/>
+<path d="M815,384l7,7l13,-14" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text class="s" x="864" y="378" font-size="24" font-weight="800" fill="#f4f1eb">Allowed</text>
+<text class="s" x="864" y="406" font-size="16" font-weight="500" fill="#f4f1eb">exit 0 · the command runs</text>
+</g>
+</svg>

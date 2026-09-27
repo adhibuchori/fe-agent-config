@@ -1,0 +1,6 @@
+{
+  "//": "This repo's settings for .claude/hooks. A key left out keeps its default; .claude/agent-config.example.json lists every key with its default.",
+
+  "//localePairs": "The next-intl catalogues change together (CLAUDE.md § Notes): post-edit.sh tells the agent when one changed and the other did not. List every locale your app ships, or remove the key to turn the note off.",
+  "localePairs": [["src/messages/en.json", "src/messages/id.json"]]
+}

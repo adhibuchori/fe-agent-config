@@ -1,0 +1,24 @@
+# Requests reviewers automatically. Without branch protection this is a prompt, not
+# a gate. Later rules win, so the narrow entries below override the catch-all.
+
+*                                @your-github-handle
+
+# Anything that decides what reaches production deserves a deliberate look.
+/.github/                        @your-github-handle
+/.gitleaks.toml                  @your-github-handle
+/Dockerfile                      @your-github-handle
+/.dockerignore                   @your-github-handle
+
+# The agent's guardrails: what it may run and reach, what it is refused, and the
+# checks and unlock scripts that prove and open them.
+/.claude/hooks/                  @your-github-handle
+/.claude/settings.json           @your-github-handle
+/.claude/agent-config.json       @your-github-handle
+/.mcp.json                       @your-github-handle
+/.husky/                         @your-github-handle
+/scripts/check/                  @your-github-handle
+/scripts/ops/                    @your-github-handle
+/scripts/env/                    @your-github-handle
+/.skillspector-baseline.yaml     @your-github-handle
+/oxlint.json                     @your-github-handle
+/knip.ts                         @your-github-handle

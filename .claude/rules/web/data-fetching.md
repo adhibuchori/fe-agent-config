@@ -1,0 +1,30 @@
+---
+paths:
+  - 'src/hooks/**/*.ts'
+  - 'src/components/**/*.tsx'
+  - 'src/app/**/layout.tsx'
+  - 'src/app/**/page.tsx'
+---
+
+# FETCH — No Request Waterfalls
+
+A screen's requests start together, from what the URL and the server already know. A request that
+waits for another one's answer adds that whole round trip to every load: a detail screen that waits
+on the list request for an id the URL already carries lands a full round trip late.
+
+## Start from the earliest value
+
+- **W1** Key a query on the value that names it at its source. An id the URL carries (`projectId`, `postId`) is enabled from the URL param, never from an object another request resolves (`project?.id` off the list).
+- **W2** Asking is not authorizing. The server refuses what the caller may not see (403), so a request never waits for the client to confirm access first. What the client checks is what it shows: rendering stays gated on the resolved object, and an answer the caller may not see is never drawn.
+- **W3** A request whose consumer mounts late, behind a loading gate, is fired higher up on the same query key (a prefetch hook in the layout), so the component that mounts later finds it in flight or answered.
+- **W4** What the server already knows leaves with the document. A value a Server Component holds (the session's avatar URL) is `preload()`ed there, not discovered by the client after it renders.
+- **W5** While the URL's id is still being confirmed, the placeholder is the screen that id names, never the screen for its absence. A reload that draws the picker until the list answers, then swaps to the item, shows a second screen for one frame: a waterfall the reader sees.
+
+## When waiting is right
+
+- **W6** A request may wait on another only for a value that only the other's answer carries: a URL inside a payload, an id the URL does not hold. The `enabled:` names that dependency in a comment.
+
+## Proving it
+
+- **W7** Measure before and after. Where the repo ships `bun run measure:waterfall` (an optional module), load the URL fresh with it: it flags every request that started as another ended. Elsewhere, record the Network panel with the cache disabled. Each flag is removed or justified under W6.
+- **W8** A fix carries a test that fails without it: the hook asks for the id while the other source is still loading.

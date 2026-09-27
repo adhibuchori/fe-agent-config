@@ -1,0 +1,31 @@
+---
+paths:
+  - 'src/**/*.tsx'
+  - 'src/app/**/*.ts'
+  - 'src/lib/security/**'
+  - 'src/lib/api/**'
+  - 'src/proxy.ts'
+  - 'src/middleware.ts'
+  - 'next.config.ts'
+---
+
+# Frontend Security
+
+What the quality gate enforces and what it cannot. Reading `.env*` files and writing production
+data go through the unlock described in `docs/unlock.md`.
+
+## Gated in CI
+
+- `dangerouslySetInnerHTML` / `__html` fails **Unsafe React Patterns Check**. Render text, or HTML from a helper that escapes before it formats, and justify the call site in review.
+- **Security Audit** (`bun audit`), **Secret Scan (gitleaks)** over full history, **Check .env Not Committed**, and **Check Source Maps Leak** on `.next/static`. A red one is fixed, never allowlisted to pass.
+
+## Not gated — check it yourself
+
+- Server-only values never use `NEXT_PUBLIC_`: that prefix ships to every browser.
+- A client-supplied header (`x-forwarded-for`, `x-real-ip`, `cf-connecting-ip`, `x-forwarded-host`) is never trusted from the caller. A proxy in this app strips them and reads only the one header the edge overwrites.
+- Build absolute URLs from the configured public origin, never from the request's `Host`.
+- A user-controlled URL rendered as `href`/`src` is allowed only for `http:`, `https:` and `mailto:`. `target="_blank"` carries `rel="noopener noreferrer"`.
+- Secrets and one-time codes never ride in a URL. Short-lived auth state is cleared once spent and on logout.
+- Route handlers and server actions validate input with Zod and authorise the caller themselves; a UI gate hides, it does not protect.
+- Dev-only controls (mock gateways, debug panels) are gated at the call site **and** inside the component, so a new call site cannot ship them.
+- The CSP lives in `next.config.ts` (and `src/lib/security/csp.ts` where present). Tighten it; never add `unsafe-eval` or a wildcard `connect-src`.

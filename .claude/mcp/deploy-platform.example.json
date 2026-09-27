@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "deploy-platform": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "<deploy-platform-mcp-package>@<pinned-version>"],
+      "env": {
+        "DEPLOY_PLATFORM_URL": "https://<deploy-platform-host>",
+        "DEPLOY_PLATFORM_API_KEY": "${DEPLOY_PLATFORM_API_TOKEN}"
+      }
+    }
+  }
+}

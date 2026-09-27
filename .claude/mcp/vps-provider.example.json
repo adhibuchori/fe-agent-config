@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "vps-provider": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "<vps-provider-mcp-package>@<pinned-version>"],
+      "env": {
+        "VPS_PROVIDER_API_TOKEN": "${VPS_PROVIDER_API_TOKEN}"
+      }
+    }
+  }
+}

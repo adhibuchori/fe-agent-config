@@ -1,0 +1,91 @@
+# CodeQL: code scanning on pull requests, advanced setup. Default setup is not
+# used on purpose: it adds a weekly scheduled scan, and this repository runs no
+# scheduled and no push-triggered workflows.
+#
+# Languages come from what the pull request contains, so this one file fits
+# every stack unchanged:
+#
+#   | Stack                          | Detected when (repository root)     | Languages analysed      |
+#   | ------------------------------ | ----------------------------------- | ----------------------- |
+#   | every repository               | always (it has .github/workflows/)  | actions                 |
+#   | TypeScript stacks (fe/be/docs) | tsconfig.json + tracked JS/TS files | + javascript-typescript |
+#   | Python stack (ai)              | pyproject.toml + tracked *.py files | + python                |
+#
+# Every language uses build-mode none: nothing is compiled and no project code
+# runs. Results show as the pull request's code scanning check, with annotations
+# on the lines it changed.
+#
+# A private repository needs GitHub Code Security to upload results; without it
+# the upload fails, so the jobs are skipped until you set the repository
+# variable CODE_SECURITY to `true`. Public repositories need nothing.
+name: CodeQL
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  languages:
+    name: Detect Languages
+    if: ${{ !github.event.repository.private || vars.CODE_SECURITY == 'true' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Detect Languages
+        id: detect
+        run: |
+          langs='"actions"'
+          if [ -f tsconfig.json ] && [ -n "$(git ls-files -- '*.ts' '*.tsx' '*.mts' '*.cts' '*.js' '*.jsx' '*.mjs' '*.cjs')" ]; then
+            langs="${langs},\"javascript-typescript\""
+          fi
+          if [ -f pyproject.toml ] && [ -n "$(git ls-files -- '*.py')" ]; then
+            langs="${langs},\"python\""
+          fi
+          echo "matrix=[${langs}]" >> "$GITHUB_OUTPUT"
+          echo "CodeQL languages: [${langs}]"
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: languages
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read # check out the code under analysis
+      security-events: write # upload the results to code scanning
+      actions: read # lets the upload read this run's metadata in a private repository
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.languages.outputs.matrix) }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: /language:${{ matrix.language }}

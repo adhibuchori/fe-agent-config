@@ -1,0 +1,41 @@
+# The build context holds only what the image builds from. Anything else sent here can end up in a
+# layer: a Dockerfile's `COPY . .` copies it whether or not the image needs it.
+
+# Secrets: every env file, the templates too (the platform passes the build args and runtime env).
+.env*
+.envrc
+
+# The agent layer and its local state (.claude/state holds the unlock files and .env backups).
+.claude/
+.agent/
+.agents/
+.gemini/
+.serena/
+.impeccable/
+_workflow-source/
+.mcp.json
+AGENTS.md
+CLAUDE.md
+SSOT.md
+PRODUCT.md
+DESIGN.md
+*.example.md
+skills-lock.json
+.skillspector/
+.skillspector-baseline.yaml
+promote-deploy-logs/
+
+# Version control, CI and local tooling.
+.git/
+.github/
+.husky/
+.vscode/
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+*.log
+.DS_Store
+Dockerfile
+.dockerignore

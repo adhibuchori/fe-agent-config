@@ -1,0 +1,54 @@
+{
+  "//": "Per-repo settings for .claude/hooks. Copy to .claude/agent-config.json and keep only the keys you change. Every key is optional: a key you leave out keeps the default shown here, a key you set replaces its default whole (list the defaults you still want), and a malformed key falls back to its default with a warning. Keys starting with // are ignored. Paths are relative to the repo root and may not start with / or contain '..'. Installed as a plugin, the hooks run only in a repo that has this file (even {}) or .claude/agent-config-kit.lock.",
+
+  "//protectedBranches": "Branches safety-check.sh and mcp-guard.sh never let an agent push to, delete, or write to through the GitHub MCP tools. A push is refused by refspec, by --all/--mirror, and by the checked-out branch when no destination is named. The user runs a real release push themselves with `! git push ...`.",
+  "protectedBranches": ["dev", "prod", "main", "master"],
+
+  "//protectedPaths": "What `rm -r` (and `git clean -f -- <path>`) may never take. A bare name (src) matches a folder or file of that name at any depth; a path with a slash (docs/adr) matches that path and everything under it. A folder git tracks files in, or that holds a repo, is protected whatever its name. Throwaways named zz-*, *-probe or __probe*, or ignored by git, that hold nothing git tracks, stay deletable.",
+  "protectedPaths": [
+    "src",
+    "app",
+    "components",
+    "content",
+    "tests",
+    "scripts",
+    ".claude",
+    ".agent",
+    ".agents",
+    "_workflow-source",
+    ".github",
+    ".git",
+    "AGENTS.md",
+    "SSOT.md",
+    "CLAUDE.md",
+    "PRODUCT.md",
+    "DESIGN.md"
+  ],
+
+  "//generatedPaths": "Files or folders generated-guard.sh keeps agents from editing by hand (Write, Edit, MultiEdit and Serena's write tools, including a folder-wide replace_in_files). Change the source and run the generator instead. A path the repo does not have guards nothing.",
+  "generatedPaths": [
+    "src/lib/api/generated",
+    "src/generated",
+    "openapi.json",
+    "openapi.yaml",
+    "openapi.yml"
+  ],
+
+  "//migrationsDirs": "Folders of generated migrations migration-guard.sh keeps agents from editing by hand (drizzle-kit output, Alembic revisions). A folder the repo does not have guards nothing, so the hook switches itself off in a repo without migrations.",
+  "migrationsDirs": [
+    "src/db/migrations",
+    "drizzle",
+    "src/app/db/migrations/versions",
+    "alembic/versions",
+    "migrations/versions"
+  ],
+
+  "//commandWrappers": "Commands that run another command, which safety-check.sh peels off before judging it: \"name [subcommand ...] [-opt= ...]\". The name and any listed subcommands are dropped, then the wrapper's options up to --; an option written with a trailing = takes the next word as its value. Example: \"dotenvx run -f= --env-file=\" makes `dotenvx run -f .env.local -- git push origin main` read as `git push origin main`. env, command, exec, nohup, time, sudo, nice, xargs and shells (bash -c) are always peeled.",
+  "commandWrappers": [],
+
+  "//dbWriteGuard": "db-guard.sh: toolPattern is a regex matched against the whole name of the production database's SQL tool. SQL that may write runs through it only while the user has unlocked db (docs/unlock.md). Wire db-guard.sh in settings.json with a matcher that covers the same tool. A malformed value falls back to the default.",
+  "dbWriteGuard": { "toolPattern": "mcp__db-prod__execute_sql" },
+
+  "//localePairs": "Groups of files that change together, such as translation catalogues: when post-edit.sh sees one member edited while another has no change in the working tree or index, it tells the agent. Off by default. Example: [[\"messages/en.json\", \"messages/fr.json\"]].",
+  "localePairs": []
+}

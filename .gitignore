@@ -1,0 +1,56 @@
+# Agent-local state — never commit
+.claude/settings.local.json
+.claude/session-logs/
+.serena/
+# Unlock files, .env backups (they hold secrets) and the audit log: docs/unlock.md
+.claude/state/
+# SkillSpector reports (scripts/check/skills.sh)
+.skillspector/
+
+# Secrets (the *.example templates hold no values and are committed)
+.env
+.env.*
+.envrc
+!.env.example
+!.env.*.example
+
+# Third-party skills are committed as text; an engine binary is per machine, never committed (the template's SETUP.md §7)
+.claude/skills/*/scripts/bin/
+.agents/skills/*/scripts/bin/
+
+# The optional impeccable design skill's working files: the vendor's own block, from its README
+# ("Keeping .impeccable out of git"). Its shared files stay tracked; refresh the block on upgrade.
+# impeccable-ignore-start
+**/.impeccable/config.local.json
+**/.impeccable/hook.cache.json
+**/.impeccable/hook.pending.json
+**/.impeccable/*.png
+**/.impeccable/review/
+**/.impeccable/questions/
+**/.impeccable/live/server.json
+**/.impeccable/live/sessions/
+**/.impeccable/live/previews/
+**/.impeccable/live/annotations/
+**/.impeccable/live/cache/
+**/.impeccable/live/manual-edit-apply-transaction.json
+**/.impeccable/live/manual-edit-events.jsonl
+**/.impeccable/live/manual-edit-evidence/
+**/.impeccable/live/pending-manual-edits.json
+**/.impeccable/live/deferred-svelte-component-accepts.json
+**/.impeccable/live/*.png
+# impeccable-ignore-end
+
+# Build and test output
+/.next/
+/out/
+/coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# The generated API client is rebuilt from openapi.json (`bun generate:api`), never committed
+src/lib/api/generated/
+
+# Tooling
+node_modules/
+.DS_Store
+*.log

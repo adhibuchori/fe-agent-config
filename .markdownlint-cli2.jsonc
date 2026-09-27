@@ -1,0 +1,13 @@
+// markdownlint settings for this repository's own docs and for SSOT.md, which adopters copy.
+// Run `markdownlint-cli2` from the root.
+{
+  "globs": ["README.md", "README.id.md", "SETUP.md", "SSOT.md", "docs/**/*.md"],
+  "config": {
+    // Prose wraps at 100 columns, like the code; tables and code blocks keep their natural width.
+    "MD013": { "line_length": 100, "code_blocks": false, "tables": false },
+    // The README opens with its banner, a <picture>, before the first heading.
+    "MD041": { "allow_preamble": true },
+    // Only what GitHub renders for themed images and collapsed sections.
+    "MD033": { "allowed_elements": ["p", "picture", "source", "img", "details", "summary"] }
+  }
+}

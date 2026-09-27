@@ -1,0 +1,78 @@
+# Workflows Lint: static checks for GitHub Actions files. Runs only when a pull
+# request touches them, so most pull requests never start it.
+#   - actionlint: syntax, expressions and contexts, with ShellCheck over every
+#     `run:` block. ShellCheck ships inside the pinned image, so it can never be
+#     silently missing from the runner.
+#   - zizmor: security audits, pedantic persona, offline (no API calls).
+#   - pinact: every `uses:` is a full commit SHA, and its version comment names
+#     the release that SHA really is.
+# One job, not three: each check starts even when an earlier one failed, so a
+# single run reports all of them.
+#
+# Needs a Linux runner with Docker (actionlint and zizmor run as pinned images).
+# Do not make it a required status check: the `paths:` filter means it never
+# reports on a pull request that leaves workflows alone, and a required check
+# that never reports blocks the merge.
+name: Workflows Lint
+
+on:
+  pull_request:
+    paths:
+      - '.github/**'
+      - 'actions/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflows-lint-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  workflows-lint:
+    name: Workflows Lint
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: actionlint (with ShellCheck)
+        uses: docker://rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          args: -color
+
+      - name: zizmor
+        if: ${{ !cancelled() }}
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          version: 1.30.1
+          persona: pedantic
+          online-audits: false
+          # Findings print as annotations on the pull request; nothing is
+          # uploaded, so the job needs no security-events permission.
+          advanced-security: false
+          annotations: true
+
+      # pinact is built from source at an exact tag. Go verifies every module
+      # against the public checksum database, so nothing unverified runs.
+      - name: Setup Go
+        if: ${{ !cancelled() }}
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.27.1
+          cache: false
+
+      # pinact cannot pin container images (`docker://`), so it skips them;
+      # zizmor's pedantic unpinned-images audit requires their digest instead.
+      - name: pinact
+        if: ${{ !cancelled() }}
+        env:
+          # Read-only token: pinact only looks up tags on public action repos.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          go install github.com/suzuki-shunsuke/pinact/v5/cmd/pinact@v5.0.0
+          "$(go env GOPATH)/bin/pinact" run --check --verify-comment --exclude '^docker://'

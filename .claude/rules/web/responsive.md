@@ -1,0 +1,49 @@
+---
+paths:
+  - '**/*.tsx'
+  - '**/*.css'
+---
+
+# RESP — Responsive Layout Standard
+
+The width a layout is read at is an input, not an assumption. Enforced by
+`bun run check:responsive` in pre-commit and the quality gate — it blocks. These are the binding
+rules; the failures behind them and worked examples are in `.claude/docs/standards/responsive.md`.
+
+Optional module: a repo that does not adopt it deletes this file, its standard, its check
+(`scripts/check/responsive.ts` with `scripts/lib/stylesheets.ts`) and its `gates.list` line
+together.
+
+## Rules
+
+- **R1** Media queries read breakpoints by name: `@media (width < theme(--breakpoint-md))`. Never a pixel literal, never the `max-width: N-1` idiom.
+- **R2** `--breakpoint-*` are declared in `@theme`, in rem: `40rem / 48rem / 64rem / 80rem`.
+- **R3** No class inside a width media query without a consumer in JSX.
+- **R4** No project-prefixed class in JSX without a rule behind it. A rule may live in any sheet `globals.css` `@import`s; a sheet it does not import fails the check.
+- **R5** An inline dimension of 200px or more carries a fluid guard: `width: 'min(300px, 100%)'`. `maxWidth` is exempt.
+- **R6** A grid track of 280px or more is wrapped in `min()`: `repeat(auto-fill, minmax(min(330px, 100%), 1fr))`.
+- **R7** Every shell and screen root is responsive by some mechanism: a Tailwind variant, a class a width media query reaches, or `clamp()`/`min()`/`minmax()`/`vw`/`dvh`.
+- **R8** Every `overflow: auto` wrapper is `position: relative`, or an absolute descendant such as `sr-only` widens the document and a phone zooms out. Not machine-checked: measure `document.documentElement.scrollWidth` at a phone width over CDP.
+- **R9** A machine value (password, backup code, token, key) is one line that scrolls: `white-space: nowrap`, `overflow-x: auto` with the scrollbar hidden, `min-width: 0` on the flex item. Never `break-all`.
+
+## Converting a fixed value
+
+Decide by the property's class and magnitude, never case by case:
+
+| Class                                                   | ≤24  | 25–63             | 64–199            | ≥200               |
+| ------------------------------------------------------- | ---- | ----------------- | ----------------- | ------------------ |
+| Inert — `borderRadius`, `zIndex`, `marginTop`, `rowGap` | keep | keep              | keep              | keep               |
+| Spacing — `gap`, `padding`, `marginLeft`                | keep | keep              | `clamp()` from 32 | `clamp()`          |
+| Type — `fontSize`                                       | keep | `clamp()` from 20 | `clamp()`         | `clamp()`          |
+| Dimension — `width`, `minWidth`, `flexBasis`            | keep | keep              | inspect           | `min(Npx, 100%)`   |
+| Cap — `maxWidth`, `maxHeight`                           | keep | keep              | keep              | keep               |
+| Grid — `gridTemplateColumns`                            | —    | —                 | keep              | `min()` or a class |
+
+Lift a value to a class only when it changes at a breakpoint, repeats three or more times across
+two or more files, or a skeleton must agree with its real component.
+
+## Patterns
+
+- A skeleton wears the real component's class (`className="app-list-row"`) instead of copying its geometry.
+- A drawer sets `inert` on the content behind it and on the closed panel. Never write a focus-trap hook.
+- Tests assert structure — class strings, elements, attributes — never pixels. `mockWindowDimensions` is only for hooks that read `window.innerWidth`; a `matchMedia` mock must actually dispatch `change`. Real overflow needs one browser pass at 320/375/768/1024 with `overflow-x: clip` off, recorded in the PR.
