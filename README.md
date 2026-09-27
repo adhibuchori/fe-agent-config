@@ -54,7 +54,7 @@ and writes only when you reply **go**. [Prefer plugins?](#prefer-plugins) compar
    [commands](#commands), [agents](#agents), [skills](#skills), [rules](#rules),
    [checks and gates](#checks-and-gates), [CI workflows](#ci-workflows),
    [config files](#config-files)
-9. [Configuration](#configuration) ·
+9. [Configuration](#configuration) · [Using RTK](#using-rtk) ·
    [What gets blocked, and how to get past it](#what-gets-blocked-and-how-to-get-past-it)
 10. [Unlocking `.env` and the production DB](#unlocking-env-and-the-production-db)
 11. [CI/CD](#cicd) · [GitHub repository configuration](#github-repository-configuration)
@@ -538,7 +538,7 @@ your-project/
 │
 ├── .husky/pre-commit            Runs the gates on what you stage
 ├── scripts/
-│   ├── check/                   The gates: gates.sh + gates.list, and 21 check files
+│   ├── check/                   The gates: gates.sh + gates.list, and 22 check files
 │   ├── env/                     show.sh · set.sh · envfile.py: masked reads, unlocked writes
 │   ├── ops/                     unlock.sh (you run it) · pr-ready.sh (can this PR merge?)
 │   ├── sync/                    workflows.sh · rules.sh: the mirrors, each with --check
@@ -677,7 +677,8 @@ Skills load by themselves when the conversation matches their description.
 | --- | --- | --- | --- |
 | [react-doctor](.claude/skills/react-doctor/SKILL.md) | Regression scans after React changes, and a local triage that fixes and proves each finding; CLI pinned to 0.9.14, results kept on your machine | "scan the React code", or `/react-doctor` | Security, performance and accessibility findings before the commit |
 | [skeleton](.claude/skills/skeleton/SKILL.md) (optional module) | Derives a loading skeleton's heights from the real component, wires the preview switch, and measures the pair at four widths | "the skeleton jumps", "build a loading skeleton" | No layout shift when data arrives |
-| [impeccable](https://github.com/pbakaus/impeccable) (by reference) | Interface design, critique and polish | Install it with its own tooling ([SETUP §7](SETUP.md#7-skills-two-ship-one-is-installed-by-reference)); fill `PRODUCT.md` and `DESIGN.md` from the templates | Design work from a written brief, with nothing vendored here |
+| [impeccable](https://github.com/pbakaus/impeccable) (by reference) | Interface design, critique and polish | Install it with its own tooling ([SETUP §7](SETUP.md#7-skills-two-ship-two-are-installed-by-reference)); fill `PRODUCT.md` and `DESIGN.md` from the templates | Design work from a written brief, with nothing vendored here |
+| [ui-animation](https://github.com/mblode/agent-skills/tree/main/skills/ui-animation) (by reference) | Builds, reviews and measures UI motion: springs, gestures, scroll effects, easing | Install it with its own tooling ([SETUP §7](SETUP.md#7-skills-two-ship-two-are-installed-by-reference)); MIT, pinned by content hash | Motion that follows measured timing, with nothing vendored here |
 
 `react-doctor` ships as an adapted copy under its vendor's license (`LICENSE` beside it). No
 installed third-party skill tree is committed.
@@ -736,7 +737,7 @@ run by hand:
 | [gates.sh](scripts/check/gates.sh) + [gates.list](scripts/check/gates.list) | Runs every gate in the list, one log each, and a table at the end | `bash scripts/check/gates.sh` (`--only TEXT`, `--paths P…`, `--fix P…`, `--fail-fast`) | One command answers "is this ready to commit?" |
 | [.husky/pre-commit](.husky/pre-commit) | Runs the gates the staged files need | Runs by itself on `git commit` once `bun install` ran `prepare` | A red gate never becomes a commit |
 | [quality-gate.sh](.github/scripts/quality-gate.sh) | The pull-request gate: the list above plus the audit, diff scans, full-history secret scan, skill scan and production build | `bash .github/scripts/quality-gate.sh origin/dev` (`--strict` fails on a check that could not run) | See the CI result before you push |
-| [hook-probes.sh](scripts/check/hook-probes.sh) + [hook-probes.tsv](scripts/check/hook-probes.tsv) | Proves every hook rule both ways: 540 commands it must stop, 268 it must let through, plus each fail mode | `bash scripts/check/hook-probes.sh` (about nine minutes; `/bin/bash` proves bash 3.2) | A guard that silently stopped firing is caught |
+| [hook-probes.sh](scripts/check/hook-probes.sh) + [hook-probes.tsv](scripts/check/hook-probes.tsv) | Proves every hook rule both ways: 569 commands it must stop, 276 it must let through, plus each fail mode | `bash scripts/check/hook-probes.sh` (about nine minutes; `/bin/bash` proves bash 3.2) | A guard that silently stopped firing is caught |
 | [ai-config.sh](scripts/check/ai-config.sh) | Cited rule numbers exist, the always-loaded context fits 15,000 bytes, hook wiring is sound, MCP servers are pinned | `bash scripts/check/ai-config.sh` | `CLAUDE.md` stays short enough to be read; no rule citation dangles |
 | [unlock.sh](scripts/ops/unlock.sh) | Opens `env` or `db` for a few minutes, shows what is open, or locks it all | `! bun unlock env` (you only; see [Unlocking](#unlocking-env-and-the-production-db)) | Secrets and production writes open only when you say so |
 | [show.sh](scripts/env/show.sh) · [set.sh](scripts/env/set.sh) | Lists a `.env*` file's keys with secrets masked; changes one value, from stdin, while `env` is unlocked | `bash scripts/env/show.sh .env.production` | The agent can work with env files without seeing a secret |
@@ -779,7 +780,7 @@ run by hand:
 | Pre-commit gate | Runs when you stage | Catches |
 | --- | --- | --- |
 | `@format` | anything | Unformatted or failing-lint files, checked read-only |
-| `gitleaks git --staged` | anything | A secret in the staged diff |
+| `bash scripts/check/secrets.sh` | anything | A secret in the staged diff (gitleaks; a missing gitleaks fails the gate, a release off CI's pin warns) |
 | `bun run type-check` | code | Type errors |
 | `bun run check:dead-code` | code | Unused files, exports and dependencies (Knip) |
 | `bash scripts/check/double-assertion.sh` | code | `x as unknown as T` |
@@ -917,6 +918,21 @@ Two environment variables are optional: `AGENT_WORKSPACE_ROOT` (one folder holdi
 and `AGENT_HOOK_STATE_DIR` (where per-session state lives). The
 [hooks README](.claude/hooks/README.md#configuration) explains both.
 [Customize recipes](#customize-recipes) shows these keys at work.
+
+### Using RTK
+
+[RTK](https://github.com/rtk-ai/rtk) is an optional command-line proxy that shortens command output
+before the agent reads it; its Claude Code hook rewrites `git diff` into `rtk git diff`. This
+template never installs it and works the same without it.
+
+- **The guards see through it.** `safety-check.sh` reads `rtk <command>` and `rtk proxy <command>`
+  as the command they run, so `rtk git push --force origin main` is refused like the plain push. 37
+  rows in `scripts/check/hook-probes.tsv` prove it both ways.
+- **Exact-output steps bypass it.** A step that decides from what a command prints (an empty diff,
+  the whole diff a review reads, CI status) must see all of it, and RTK's summary can drop lines or
+  print one for an empty diff. The gates run inside scripts (`gates.sh`, `pr-ready.sh`,
+  `secrets.sh`), which RTK never rewrites; where a command or agent runs `git`, `grep` or `gh`
+  itself, it says to use `rtk proxy <command>` when RTK is installed.
 
 ## What gets blocked, and how to get past it
 
@@ -1299,9 +1315,9 @@ once. Do not test the deploy path that way; a merge into `prod` deploys and stri
   through. So each guard refuses what it cannot check (bad input, missing python3, a hang), and
   each feedback hook stays silent when it fails. The
   [fail-mode table](.claude/hooks/README.md#fail-modes) lists every case.
-- **Every rule is proven both ways.** `scripts/check/hook-probes.sh` feeds safety-check 540
-  commands it must refuse and 268 it must allow ([`hook-probes.tsv`](scripts/check/hook-probes.tsv)),
-  then proves the other guards, each fail mode and a linked git worktree: 2,288 probes in a fresh
+- **Every rule is proven both ways.** `scripts/check/hook-probes.sh` feeds safety-check 569
+  commands it must refuse and 276 it must allow ([`hook-probes.tsv`](scripts/check/hook-probes.tsv)),
+  then proves the other guards, each fail mode and a linked git worktree: 2,362 probes in a fresh
   copy, all passing under macOS's `/bin/bash` 3.2. It runs in pre-commit when a hooks file is
   staged, and in every pull-request gate. Audit it by reading the table and running the script.
 - **Layers, not one wall.** The hooks read command text; the `deny` rules in
@@ -1324,7 +1340,7 @@ once. Do not test the deploy path that way; a merge into `prod` deploys and stri
 | The other 15 rules | 45,080 bytes in total, each loaded only when a matching file is open |
 | A hook, per call | 53 to 138 ms, median of 25 runs per hook: safety-check the slowest (118 ms before the guard-script rules, which add about 17%; old and new run side by side), session-start, post-edit and post-commit the fastest (Apple M5, `/bin/bash` 3.2, python3 3.14, load average about 5; post-edit before your formatter and linter run) |
 | `post-edit` with your formatter and linter | their own time, up to its 60 s timeout |
-| The hook probes | about nine minutes (563 s), only when a hooks file is staged |
+| The hook probes | about ten minutes (594 s), only when a hooks file is staged |
 | CI | only on pull requests: nothing on a push, nothing on a schedule |
 
 ## Upgrade, roll back, uninstall

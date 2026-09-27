@@ -2,7 +2,7 @@
 
 <!-- impeccable:product-schema 1 -->
 
-> **Template for the optional `impeccable` design skill ([SETUP §7](https://github.com/adhibuchori/fe-agent-config/blob/main/SETUP.md#7-skills-two-ship-one-is-installed-by-reference)).** The skill reads
+> **Template for the optional `impeccable` design skill ([SETUP §7](https://github.com/adhibuchori/fe-agent-config/blob/main/SETUP.md#7-skills-two-ship-two-are-installed-by-reference)).** The skill reads
 > `PRODUCT.md` at the repo root before any design work. Copy this file to `PRODUCT.md`, fill every
 > section with confirmed facts, and delete this note; or run `/impeccable init`, which interviews
 > you and drafts the record for you to save (`.claude/settings.json` keeps agents from writing

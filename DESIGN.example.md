@@ -5,7 +5,7 @@ description: <one-line tagline>
 
 # Design System: <Project Name>
 
-> **Template for the optional `impeccable` design skill ([SETUP §7](https://github.com/adhibuchori/fe-agent-config/blob/main/SETUP.md#7-skills-two-ship-one-is-installed-by-reference)).** The skill reads `DESIGN.md`
+> **Template for the optional `impeccable` design skill ([SETUP §7](https://github.com/adhibuchori/fe-agent-config/blob/main/SETUP.md#7-skills-two-ship-two-are-installed-by-reference)).** The skill reads `DESIGN.md`
 > at the repo root as the visual system new screens must follow. Run `/impeccable document` to
 > generate it from the code, or copy this file to `DESIGN.md`, fill it in, and delete this note.
 > Tokens go in the YAML frontmatter (`colors`, `typography`, `rounded`, `spacing`,

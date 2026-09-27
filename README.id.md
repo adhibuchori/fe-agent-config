@@ -57,7 +57,7 @@ membandingkan kedua cara.
 8. [Semua isi template ini](#semua-isi-template-ini): [hook](#hook), [perintah](#perintah),
    [agen](#agen), [skill](#skill), [aturan](#aturan), [cek dan gerbang](#cek-dan-gerbang),
    [workflow CI](#workflow-ci), [file konfigurasi](#file-konfigurasi)
-9. [Konfigurasi](#konfigurasi) ·
+9. [Konfigurasi](#konfigurasi) · [Memakai RTK](#memakai-rtk) ·
    [Apa yang diblokir, dan cara melewatinya](#apa-yang-diblokir-dan-cara-melewatinya)
 10. [Membuka kunci `.env` dan DB produksi](#membuka-kunci-env-dan-db-produksi)
 11. [CI/CD](#cicd) · [Konfigurasi repositori GitHub](#konfigurasi-repositori-github)
@@ -560,7 +560,7 @@ your-project/
 │
 ├── .husky/pre-commit            Menjalankan gerbang untuk apa yang Anda stage
 ├── scripts/
-│   ├── check/                   Gerbang: gates.sh + gates.list, dan 21 file cek
+│   ├── check/                   Gerbang: gates.sh + gates.list, dan 22 file cek
 │   ├── env/                     show.sh · set.sh · envfile.py: baca tersamar, tulis saat terbuka
 │   ├── ops/                     unlock.sh (Anda yang menjalankan) · pr-ready.sh (PR bisa merge?)
 │   ├── sync/                    workflows.sh · rules.sh: mirror, masing-masing dengan --check
@@ -702,7 +702,8 @@ Skill dimuat sendiri saat percakapan cocok dengan deskripsinya.
 | --- | --- | --- | --- |
 | [react-doctor](.claude/skills/react-doctor/SKILL.md) | Pemindaian regresi setelah perubahan React, dan triase lokal yang memperbaiki serta membuktikan setiap temuan; CLI dipin ke 0.9.14, hasil tetap di mesin Anda | "scan the React code", atau `/react-doctor` | Temuan keamanan, performa, dan aksesibilitas sebelum commit |
 | [skeleton](.claude/skills/skeleton/SKILL.md) (modul opsional) | Menurunkan tinggi loading skeleton dari komponen aslinya, memasang saklar preview, dan mengukur pasangan itu di empat lebar | "the skeleton jumps", "build a loading skeleton" | Tidak ada pergeseran tata letak saat data tiba |
-| [impeccable](https://github.com/pbakaus/impeccable) (lewat referensi) | Desain antarmuka, kritik, dan pemolesan | Pasang dengan tool-nya sendiri ([SETUP §7](SETUP.md#7-skills-two-ship-one-is-installed-by-reference)); isi `PRODUCT.md` dan `DESIGN.md` dari templatenya | Pekerjaan desain berangkat dari brief tertulis, tanpa ada yang di-vendor di sini |
+| [impeccable](https://github.com/pbakaus/impeccable) (lewat referensi) | Desain antarmuka, kritik, dan pemolesan | Pasang dengan tool-nya sendiri ([SETUP §7](SETUP.md#7-skills-two-ship-two-are-installed-by-reference)); isi `PRODUCT.md` dan `DESIGN.md` dari templatenya | Pekerjaan desain berangkat dari brief tertulis, tanpa ada yang di-vendor di sini |
+| [ui-animation](https://github.com/mblode/agent-skills/tree/main/skills/ui-animation) (lewat referensi) | Membangun, meninjau, dan mengukur gerak UI: spring, gesture, efek scroll, easing | Pasang dengan tool-nya sendiri ([SETUP §7](SETUP.md#7-skills-two-ship-two-are-installed-by-reference)); MIT, di-pin lewat hash isinya | Gerak yang mengikuti timing terukur, tanpa ada yang di-vendor di sini |
 
 `react-doctor` dikirim sebagai salinan yang diadaptasi di bawah lisensi vendornya (`LICENSE` di
 sebelahnya). Tidak ada pohon skill pihak ketiga terpasang yang di-commit.
@@ -762,7 +763,7 @@ menjalankan cek yang sama dan lebih banyak lagi, 37 langkah, di setiap pull requ
 | [gates.sh](scripts/check/gates.sh) + [gates.list](scripts/check/gates.list) | Menjalankan setiap gerbang di daftar, satu log per gerbang, dan tabel di akhir | `bash scripts/check/gates.sh` (`--only TEXT`, `--paths P…`, `--fix P…`, `--fail-fast`) | Satu perintah menjawab "sudah siap di-commit?" |
 | [.husky/pre-commit](.husky/pre-commit) | Menjalankan gerbang yang dibutuhkan file yang di-stage | Berjalan sendiri saat `git commit` setelah `bun install` menjalankan `prepare` | Gerbang merah tidak pernah jadi commit |
 | [quality-gate.sh](.github/scripts/quality-gate.sh) | Gerbang pull request: daftar di atas ditambah audit, pemindaian diff, pemindaian secret seluruh riwayat, pemindaian skill, dan build produksi | `bash .github/scripts/quality-gate.sh origin/dev` (`--strict` gagal bila ada cek yang tidak bisa jalan) | Lihat hasil CI sebelum Anda push |
-| [hook-probes.sh](scripts/check/hook-probes.sh) + [hook-probes.tsv](scripts/check/hook-probes.tsv) | Membuktikan setiap aturan hook dua arah: 540 perintah yang wajib ditolak, 268 yang wajib diloloskan, plus setiap mode gagal | `bash scripts/check/hook-probes.sh` (sekitar sembilan menit; `/bin/bash` membuktikan bash 3.2) | Guard yang diam-diam berhenti bekerja ketahuan |
+| [hook-probes.sh](scripts/check/hook-probes.sh) + [hook-probes.tsv](scripts/check/hook-probes.tsv) | Membuktikan setiap aturan hook dua arah: 569 perintah yang wajib ditolak, 276 yang wajib diloloskan, plus setiap mode gagal | `bash scripts/check/hook-probes.sh` (sekitar sembilan menit; `/bin/bash` membuktikan bash 3.2) | Guard yang diam-diam berhenti bekerja ketahuan |
 | [ai-config.sh](scripts/check/ai-config.sh) | Nomor aturan yang dirujuk memang ada, konteks yang selalu dimuat muat di 15.000 byte, wiring hook benar, server MCP dipin | `bash scripts/check/ai-config.sh` | `CLAUDE.md` tetap cukup pendek untuk dibaca; tidak ada rujukan aturan yang menggantung |
 | [unlock.sh](scripts/ops/unlock.sh) | Membuka `env` atau `db` selama beberapa menit, menunjukkan apa yang terbuka, atau mengunci semuanya | `! bun unlock env` (hanya Anda; lihat [Membuka kunci](#membuka-kunci-env-dan-db-produksi)) | Secret dan penulisan produksi hanya terbuka saat Anda bilang |
 | [show.sh](scripts/env/show.sh) · [set.sh](scripts/env/set.sh) | Menampilkan key sebuah file `.env*` dengan secret tersamar; mengubah satu nilai, dari stdin, saat `env` terbuka | `bash scripts/env/show.sh .env.production` | Agen bisa bekerja dengan file env tanpa melihat satu pun secret |
@@ -805,7 +806,7 @@ menjalankan cek yang sama dan lebih banyak lagi, 37 langkah, di setiap pull requ
 | Gerbang pre-commit | Berjalan saat Anda stage | Yang ditangkap |
 | --- | --- | --- |
 | `@format` | apa saja | File yang belum terformat atau gagal lint, dicek tanpa menulis |
-| `gitleaks git --staged` | apa saja | Secret di diff yang di-stage |
+| `bash scripts/check/secrets.sh` | apa saja | Secret di diff yang di-stage (gitleaks; gitleaks yang tidak ada menggagalkan gate, rilis di luar pin CI memberi peringatan) |
 | `bun run type-check` | kode | Error tipe |
 | `bun run check:dead-code` | kode | File, export, dan dependensi tak terpakai (Knip) |
 | `bash scripts/check/double-assertion.sh` | kode | `x as unknown as T` |
@@ -944,6 +945,22 @@ variabel lingkungan bersifat opsional: `AGENT_WORKSPACE_ROOT` (satu folder beris
 `AGENT_HOOK_STATE_DIR` (tempat state per sesi disimpan).
 [README hook](.claude/hooks/README.md#configuration) menjelaskan keduanya.
 [Resep kustomisasi](#resep-kustomisasi) menunjukkan key-key ini saat dipakai.
+
+### Memakai RTK
+
+[RTK](https://github.com/rtk-ai/rtk) adalah proxy command line opsional yang memendekkan output
+perintah sebelum dibaca agen; hook Claude Code miliknya menulis ulang `git diff` menjadi `rtk git
+diff`. Template ini tidak pernah memasangnya dan bekerja sama saja tanpanya.
+
+- **Guard melihat menembusnya.** `safety-check.sh` membaca `rtk <perintah>` dan `rtk proxy
+  <perintah>` sebagai perintah yang dijalankannya, jadi `rtk git push --force origin main` ditolak
+  sama seperti push biasa. 37 baris di `scripts/check/hook-probes.tsv` membuktikannya ke dua arah.
+- **Langkah yang butuh output persis melewatinya.** Langkah yang memutuskan dari apa yang dicetak
+  sebuah perintah (diff kosong, seluruh diff yang dibaca review, status CI) harus melihat semuanya,
+  sedangkan ringkasan RTK bisa membuang baris atau mencetak satu baris untuk diff kosong. Gate
+  berjalan di dalam skrip (`gates.sh`, `pr-ready.sh`, `secrets.sh`), yang tidak pernah ditulis ulang
+  RTK; bila sebuah command atau agen menjalankan `git`, `grep`, atau `gh` sendiri, ia meminta `rtk
+  proxy <perintah>` saat RTK terpasang.
 
 ## Apa yang diblokir, dan cara melewatinya
 
@@ -1344,10 +1361,10 @@ men-strip.
   meloloskan pemanggilan. Jadi setiap guard menolak apa yang tidak bisa dicek (masukan rusak,
   python3 tidak ada, proses menggantung), dan setiap hook umpan balik diam saat gagal.
   [Tabel mode gagal](.claude/hooks/README.md#fail-modes) mencantumkan setiap kasus.
-- **Setiap aturan dibuktikan dua arah.** `scripts/check/hook-probes.sh` memberi safety-check 540
-  perintah yang wajib ditolak dan 268 yang wajib diloloskan
+- **Setiap aturan dibuktikan dua arah.** `scripts/check/hook-probes.sh` memberi safety-check 569
+  perintah yang wajib ditolak dan 276 yang wajib diloloskan
   ([`hook-probes.tsv`](scripts/check/hook-probes.tsv)), lalu membuktikan guard lainnya, setiap mode
-  gagal, dan git worktree yang ditautkan: 2.288 probe di salinan baru, semuanya lulus di
+  gagal, dan git worktree yang ditautkan: 2.362 probe di salinan baru, semuanya lulus di
   `/bin/bash` 3.2 milik macOS. Ia berjalan di pre-commit saat file hook di-stage, dan di setiap
   gerbang pull request. Audit dengan membaca tabelnya dan menjalankan skripnya.
 - **Berlapis, bukan satu tembok.** Hook membaca teks perintah; aturan `deny` di
@@ -1371,7 +1388,7 @@ men-strip.
 | 15 aturan lainnya | total 45.080 byte, masing-masing dimuat hanya saat file yang cocok dibuka |
 | Satu hook, per pemanggilan | 53 sampai 138 ms, median dari 25 kali per hook: safety-check paling lambat (118 ms sebelum aturan skrip guard, yang menambah sekitar 17%; versi lama dan baru dijalankan berdampingan), session-start, post-edit, dan post-commit paling cepat (Apple M5, `/bin/bash` 3.2, python3 3.14, load average sekitar 5; post-edit sebelum formatter dan linter Anda berjalan) |
 | `post-edit` dengan formatter dan linter Anda | waktu tool itu sendiri, sampai batas timeout 60 detik |
-| Probe hook | sekitar sembilan menit (563 detik), hanya saat file hook di-stage |
+| Probe hook | sekitar sepuluh menit (594 detik), hanya saat file hook di-stage |
 | CI | hanya di pull request: tidak ada saat push, tidak ada sesuai jadwal |
 
 ## Upgrade, rollback, uninstall

@@ -123,19 +123,20 @@ worth ten minutes.
 
 ### Every tool by name
 
-| Tool                               | What it is                                            | Ships here?                                                       | Covered in                                                          |
-| :--------------------------------- | :---------------------------------------------------- | :---------------------------------------------------------------- | :------------------------------------------------------------------ |
-| **Serena**                         | Semantic code search and edit over a language server  | `.mcp.json`                                                       | [below](#serena-install-it-or-delete-the-rules-that-assume-it)      |
-| **Context7**                       | Live library documentation lookup                     | `.mcp.json`                                                       | server table below                                                  |
-| **GitHub MCP**                     | Pull requests, issues and reviews inside a session    | `.mcp.json`                                                       | server table below                                                  |
-| **Postgres MCP**                   | Schema, health and query plans (`db-dev`, `db-prod`)  | `.mcp.json`                                                       | server table below · `DATABASE.example.md`                          |
-| **Cloudflare**                     | DNS, Workers and account resources                    | `.claude/mcp/cloudflare.example.json`, loaded on demand           | [below](#servers-you-load-on-demand)                                |
-| **Deploy platform · VPS provider** | Deployment and VPS control                            | `.claude/mcp/*.example.json`, loaded on demand                    | [below](#servers-you-load-on-demand)                                |
-| **Command wrapper**                | Output filter, sandbox or audit recorder              | **No**, machine-local                                             | [Command wrappers](#command-wrappers)                               |
-| **Plugins**                        | Session add-ons                                       | **No**, machine-local                                             | [Plugins](#plugins)                                                 |
-| **DeepSeek Code Review**           | AI review comment on pull requests                    | `.github/workflows/`                                              | [below](#ai-code-review-on-pull-requests-deepseek) · README § CI/CD |
-| **react-doctor**                   | React health checks; advisory only                    | Workflow + skill (`.claude/skills/react-doctor/`)                 | [§7](#7-skills-two-ship-one-is-installed-by-reference)              |
-| **impeccable**                     | Interface design and polish skill                     | **No**: installed by reference; `PRODUCT`/`DESIGN` templates ship | [§7](#7-skills-two-ship-one-is-installed-by-reference)              |
+| Tool                               | What it is                                           | Ships here?                                                       | Covered in                                                          |
+| :--------------------------------- | :--------------------------------------------------- | :---------------------------------------------------------------- | :------------------------------------------------------------------ |
+| **Serena**                         | Semantic code search and edit over a language server | `.mcp.json`                                                       | [below](#serena-install-it-or-delete-the-rules-that-assume-it)      |
+| **Context7**                       | Live library documentation lookup                    | `.mcp.json`                                                       | server table below                                                  |
+| **GitHub MCP**                     | Pull requests, issues and reviews inside a session   | `.mcp.json`                                                       | server table below                                                  |
+| **Postgres MCP**                   | Schema, health and query plans (`db-dev`, `db-prod`) | `.mcp.json`                                                       | server table below · `DATABASE.example.md`                          |
+| **Cloudflare**                     | DNS, Workers and account resources                   | `.claude/mcp/cloudflare.example.json`, loaded on demand           | [below](#servers-you-load-on-demand)                                |
+| **Deploy platform · VPS provider** | Deployment and VPS control                           | `.claude/mcp/*.example.json`, loaded on demand                    | [below](#servers-you-load-on-demand)                                |
+| **Command wrapper**                | Output filter, sandbox or audit recorder             | **No**, machine-local                                             | [Command wrappers](#command-wrappers)                               |
+| **Plugins**                        | Session add-ons                                      | **No**, machine-local                                             | [Plugins](#plugins)                                                 |
+| **DeepSeek Code Review**           | AI review comment on pull requests                   | `.github/workflows/`                                              | [below](#ai-code-review-on-pull-requests-deepseek) · README § CI/CD |
+| **react-doctor**                   | React health checks; advisory only                   | Workflow + skill (`.claude/skills/react-doctor/`)                 | [§7](#7-skills-two-ship-two-are-installed-by-reference)             |
+| **impeccable**                     | Interface design and polish skill                    | **No**: installed by reference; `PRODUCT`/`DESIGN` templates ship | [§7](#7-skills-two-ship-two-are-installed-by-reference)             |
+| **ui-animation**                   | UI motion skill: springs, gestures, scroll, easing   | **No**: installed by reference                                    | [§7](#7-skills-two-ship-two-are-installed-by-reference)             |
 
 ### The servers in `.mcp.json`
 
@@ -223,6 +224,10 @@ that file with it, and list it under `commandWrappers` in `.claude/agent-config.
 file shows the format). `safety-check.sh` peels a listed wrapper before judging the command; an
 unlisted one hides the command it runs, so `<wrapper> git push origin main` would be judged as
 `<wrapper>`.
+
+RTK needs neither the rule nor an entry: its own hook adds the prefix, and `safety-check.sh` already
+reads `rtk <command>` and `rtk proxy <command>` as the command they run ([README § Using
+RTK](README.md#using-rtk)).
 
 None ships here: a wrapper is machine-local, and a rule pointing at a missing binary fails every
 command. It has to be a hard rule rather than a note, because a wrapper mentioned in passing gets
@@ -594,13 +599,14 @@ Decide knowingly rather than inheriting either one.
 
 ---
 
-## 7. Skills: two ship, one is installed by reference
+## 7. Skills: two ship, two are installed by reference
 
-| Skill                                                 | What it is                                                                                                       | How it arrives                                                                                                                                                                                                                                                                                                      |
-| :---------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `react-doctor`                                        | Framework health checks: security, performance, accessibility, architecture. `/react-doctor` runs a local triage | **Ships** in `.claude/skills/react-doctor/`, adapted from the vendor's own skill under its Modified MIT License (the `LICENSE` beside it names two uses that need the vendor's written permission). Pinned to `react-doctor@0.9.14`; `doctor.config.json` turns its dead-code pass off, because Knip owns dead code |
-| `skeleton`                                            | Order of work for a loading skeleton, measured at four widths                                                    | **Ships** in `.claude/skills/skeleton/` as part of the optional skeleton module; delete it with `.claude/rules/web/skeletons.md`                                                                                                                                                                                    |
-| [`impeccable`](https://github.com/pbakaus/impeccable) | Interface design and polish: shape, critique, audit, polish                                                      | **By reference.** Nothing of it is committed here; install it as below                                                                                                                                                                                                                                              |
+| Skill                                                                                  | What it is                                                                                                       | How it arrives                                                                                                                                                                                                                                                                                                      |
+| :------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `react-doctor`                                                                         | Framework health checks: security, performance, accessibility, architecture. `/react-doctor` runs a local triage | **Ships** in `.claude/skills/react-doctor/`, adapted from the vendor's own skill under its Modified MIT License (the `LICENSE` beside it names two uses that need the vendor's written permission). Pinned to `react-doctor@0.9.14`; `doctor.config.json` turns its dead-code pass off, because Knip owns dead code |
+| `skeleton`                                                                             | Order of work for a loading skeleton, measured at four widths                                                    | **Ships** in `.claude/skills/skeleton/` as part of the optional skeleton module; delete it with `.claude/rules/web/skeletons.md`                                                                                                                                                                                    |
+| [`impeccable`](https://github.com/pbakaus/impeccable)                                  | Interface design and polish: shape, critique, audit, polish                                                      | **By reference.** Nothing of it is committed here; install it as below                                                                                                                                                                                                                                              |
+| [`ui-animation`](https://github.com/mblode/agent-skills/tree/main/skills/ui-animation) | Builds, reviews and measures UI motion: springs, gestures, drag, scroll effects, easing fitted from a recording  | **By reference.** MIT, nothing of it is committed here; install it as below                                                                                                                                                                                                                                         |
 
 React Doctor is **advisory: it never fails a build, so do not make it a required status check.**
 Its workflow runs on pull requests only. By default a React Doctor run sends its diagnostics and
@@ -644,6 +650,28 @@ guards, so read it before accepting (`--no-hooks` skips it). Either way:
 Not using it? Delete `PRODUCT.example.md` and `DESIGN.example.md`. The prod strip
 (`.github/scripts/strip-paths.sh`) removes `PRODUCT.md`, `DESIGN.md`, both templates,
 `skills-lock.json` and `.impeccable/` either way.
+
+### Installing ui-animation
+
+```bash
+DO_NOT_TRACK=1 npx skills@1.7.0 add mblode/agent-skills --skill ui-animation --agent claude-code
+```
+
+It lands in `.claude/skills/ui-animation/` with its `skills-lock.json` entry, like impeccable, and
+the same three rules apply: no binary committed, the tree and `skills-lock.json` committed together
+and accepted by hash under `vendored:` in `.skillspector-baseline.yaml`, and an upgrade read again
+before it passes.
+
+- **License.** MIT, Copyright 2026 Matthew Blode. The license file (`LICENSE.md`) sits at the root
+  of `mblode/agent-skills`, not in the skill folder, so copy it to
+  `.claude/skills/ui-animation/LICENSE.md` in the same commit: MIT asks for the notice to travel
+  with the files.
+- **Pin.** The repository publishes no release tags, and `skills@1.7.0` clones a tag or a branch,
+  never a bare commit. The pin is therefore the content hash: `computedHash` in `skills-lock.json`
+  and the `sha256` under `vendored:`. `npx skills@1.7.0 update ui-animation` moves both, and the
+  skill scan fails until someone reads the new tree.
+- **Where it fits.** It proposes motion; `.claude/rules/web/ui-conventions.md` still decides
+  (nothing moves under `prefers-reduced-motion`, and nothing animates on load).
 
 **Before you add a drift checker of your own:** an installer writes into `.claude/skills/` and
 `.agents/skills/`, and some also drop a command into `.claude/commands/`. None of it has a
