@@ -12,7 +12,8 @@ it, and report a missing one as a finding rather than assuming a path.
 
 ## Scope
 
-The uncommitted diff (`git diff` plus `git diff --staged`), plus the files below that it touches or
+The uncommitted diff (`git diff` plus `git diff --staged`; with RTK installed, through
+`rtk proxy git diff …`, since its rewrite condenses a diff), plus the files below that it touches or
 depends on: `src/app/**/layout.tsx`, `src/app/**/page.tsx` (their `metadata` / `generateMetadata`),
 `src/app/robots.ts` or `public/robots.txt`, `src/app/sitemap.ts`, `opengraph-image.*` /
 `twitter-image.*`, and the structured-data helpers. Routes behind sign-in are not public: check

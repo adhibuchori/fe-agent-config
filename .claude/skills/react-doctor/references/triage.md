@@ -14,8 +14,9 @@ RD=(bunx react-doctor@0.9.14 --no-score --no-supply-chain)
 
 ## 1. Scope
 
-Read `git status --porcelain=v1` first. Changes already in the tree belong to the user: never
-overwrite, restore or reformat them.
+Read `git status --porcelain=v1` first (with RTK installed, `rtk proxy git status --porcelain=v1`:
+every path is needed). Changes already in the tree belong to the user: never overwrite, restore or
+reformat them.
 
 | The user wants                  | Scope flags                                                      |
 | ------------------------------- | ---------------------------------------------------------------- |

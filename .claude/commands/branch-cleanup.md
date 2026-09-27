@@ -83,6 +83,9 @@ Then local:
 git branch --merged dev | grep -E '^\s+internal/' | xargs -r git branch -d
 ```
 
+With RTK installed, start the pipe with `rtk proxy git branch --merged dev`: its rewrite reformats
+the list, and the `grep` would then match nothing.
+
 `git branch -d` (not `-D`) is deliberate: it refuses to delete anything unmerged, a second
 independent guard against the case Step 3 is meant to catch.
 

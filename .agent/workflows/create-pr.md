@@ -17,6 +17,9 @@ git log origin/dev..HEAD --oneline
 git diff origin/dev...HEAD --stat
 ```
 
+With RTK installed, run the `git log` and `git diff` lines as `rtk proxy git …`: its rewrite drops
+merge commits from `--oneline` and reshapes `--stat`, and the PR body lists both.
+
 The base branch is **`dev`**, never `main`: this repo promotes `internal/{scope}` → `dev` →
 `prod` (CLAUDE.md § Branching). A promotion into `prod` is `/promote`'s job.
 

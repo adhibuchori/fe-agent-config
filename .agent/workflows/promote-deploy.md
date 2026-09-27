@@ -87,8 +87,9 @@ gh run list --limit 5 --json name,status,conclusion,createdAt
 Read it unfiltered. Two signatures worth telling apart:
 
 - **Spending limit** — the job dies in about three seconds with no steps. The reason is in the
-  check-run annotation, not the run log: `gh api repos/{owner}/{repo}/check-runs/<id>`, and look for
-  the billing or spending-limit message.
+  check-run annotation, not the run log: `gh api repos/{owner}/{repo}/check-runs/<id>` (with RTK
+  installed, `rtk proxy gh api …`, which keeps the annotation text whole), and look for the billing
+  or spending-limit message.
 - **Runner minutes exhausted, or no runner available** — the job is created but never starts:
   `started_at` stays far behind `created_at` and `runner_name` is empty.
 
@@ -150,6 +151,8 @@ When runners are available again, find every promotion still carrying open items
 ```bash
 grep -rl '^- \[ \]' promote-deploy-logs/
 ```
+
+With RTK installed, run it as `rtk proxy grep …`: its rewrite regroups and can truncate the list.
 
 Work each file down to zero unticked boxes, then fill in **Settled**. A log with open boxes is a
 commit in production that nothing has ever checked, which is the whole reason the file exists.
@@ -303,7 +306,8 @@ schema only when someone runs the migration, and the migration lands before the 
 it must stay backward-compatible with the code still running.
 
 1. List what this promotion adds: `git fetch origin`, then
-   `git diff --name-only <prod commit from 2.2>..origin/prod -- <migrations-dir>`.
+   `git diff --name-only <prod commit from 2.2>..origin/prod -- <migrations-dir>` (with RTK
+   installed, `rtk proxy git diff …`: its rewrite prints a line even when nothing changed).
    Nothing listed: skip to Phase 3.
 2. Take a manual backup with the adapter's `backup`, and confirm the file exists where it says.
 3. Hand the migration to the user. It runs as the database owner role, from their shell, with the

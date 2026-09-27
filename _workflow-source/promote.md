@@ -82,8 +82,9 @@ bash scripts/ops/pr-ready.sh {PR}
 
 `pr-ready.sh` reads the PR's checks, mergeability, unresolved review threads, and whether its head
 is the branch its base expects, in one call; it exits 0 only when the PR can be merged. Read both
-unfiltered: if a command-output wrapper is installed, bypass it, because a filtered summary shifts
-between calls and cannot be trusted for a pass/fail decision.
+whole: `pr-ready.sh` is a script, which RTK never rewrites, and with RTK installed run `gh pr checks`
+and the `gh run view` below as `rtk proxy gh …`, because a filtered summary shifts between calls
+and cannot be trusted for a pass/fail decision.
 
 If anything is red: **investigate the cause and fix it.** Do not re-run a failed job hoping it
 passes. Read the log:
@@ -114,7 +115,8 @@ gh api "repos/{owner}/{repo}/pulls/{PR}/comments" --paginate
 gh api "repos/{owner}/{repo}/pulls/{PR}/reviews" --paginate
 ```
 
-Judge each suggestion yourself against this repo's rules (`AGENTS.md` where it has one, and
+With RTK installed, run both as `rtk proxy gh api …`: every comment and its `id` are needed for the
+replies. Judge each suggestion yourself against this repo's rules (`AGENTS.md` where it has one, and
 `.claude/rules/`). Apply the ones that are
 genuinely right; a reviewer bot is often confidently wrong about project-specific conventions.
 
@@ -223,7 +225,8 @@ schema only when someone runs the migration, and the migration lands before the 
 it must stay backward-compatible with the code still running.
 
 1. List what this promotion adds:
-   `git diff --name-only origin/prod...origin/dev -- <migrations-dir>`.
+   `git diff --name-only origin/prod...origin/dev -- <migrations-dir>` (with RTK installed,
+   `rtk proxy git diff …`: its rewrite prints a line even when nothing changed).
    Nothing listed: skip to 2.4.
 2. Take a manual backup with the adapter's `backup`, and confirm the file exists where it says.
 3. Hand the migration to the user. It runs as the database owner role, from their shell, with the

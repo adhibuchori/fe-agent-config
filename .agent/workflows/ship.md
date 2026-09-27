@@ -53,9 +53,11 @@ git diff --cached --name-only       # the scope snapshot — § 4.3 compares aga
 > checkout, stop and commit by pathspec with `/commit` instead.
 
 > [!CAUTION]
-> **Read every diff unfiltered.** A command-output wrapper or filter can shorten a diff without
-> leaving a marker, and a review of a silently truncated diff passes files it never read. If such a
-> wrapper is installed, bypass it for every diff and for `gh pr checks`.
+> **Read every output whole.** RTK, where it is installed, rewrites `git status`, `git diff` and
+> `gh pr checks` into summaries that can drop lines without a marker, and print a line for an
+> empty diff: a review of a truncated diff passes files it never read, and the § 1.2 checks would
+> see a hit that is not there. With RTK installed, run each of them in this command as
+> `rtk proxy <command>`.
 
 Do not stop to ask what belongs in the commit. A split that looks incomplete (a new file without its
 test, a schema change without its migration) is not a question for the user any more; it is a

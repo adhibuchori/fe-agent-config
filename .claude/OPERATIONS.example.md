@@ -94,8 +94,9 @@ removed.
   (cron) workflow: nothing runs or opens a pull request on its own. Update dependencies by hand
   (`pinact run -u` for actions, the package manager for packages); dependency review checks them on
   the pull request.
-- Read check results unfiltered: `gh pr checks <n>`, never through an output wrapper whose summary
-  shifts between calls. `bash scripts/ops/pr-ready.sh <n>` reads a PR's checks, mergeability,
+- Read check results unfiltered: `gh pr checks <n>` (`rtk proxy gh pr checks <n>` where RTK is
+  installed), never through an output wrapper whose summary shifts between calls.
+  `bash scripts/ops/pr-ready.sh <n>` reads a PR's checks, mergeability,
   unresolved threads and head branch in one call, and exits 0 only when it can be merged. A skipped
   or neutral check is not a pass: it blocks until the user confirms it is expected, and then
   `--allow-skipped` accepts it.

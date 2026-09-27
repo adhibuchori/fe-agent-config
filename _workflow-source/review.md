@@ -29,8 +29,9 @@ git fetch origin && git diff origin/dev...HEAD --stat
 Review the **staged** changes when there are any (`git diff --cached`): that is what `/commit` and
 `/ship` hand you. Otherwise review the branch (`git diff origin/dev...HEAD`).
 
-Read every diff unfiltered, with plain `git`. A command-output wrapper or proxy can drop lines
-without saying so, and a review of a truncated diff, or a grep piped through one, reports "clean".
+Read every diff whole. With RTK installed, run every `git diff` here as `rtk proxy git diff …`: its
+rewrite condenses a diff and prints a line even for an empty one, so a review of a truncated diff,
+or a grep piped from one, reports "clean".
 
 ---
 
@@ -134,7 +135,8 @@ git diff --cached | grep -nE 'eval\s*\(|new\s+Function\s*\(|dangerouslySetInnerH
 ```
 
 Run the dependency audit on every review, not only when the lockfile changed, and report what it
-finds. Run the greps on plain `git` output; a filtered one returns nothing and reads as clean.
+finds. With RTK installed, start both greps with `rtk proxy git diff …`: a grep over a filtered diff
+returns nothing and reads as clean.
 
 ### 4.2 A01 — Broken access control
 
@@ -249,7 +251,8 @@ finds. Run the greps on plain `git` output; a filtered one returns nothing and r
 ### 4.14 Manual verification on staging
 
 1. CSP: the browser console shows no violation.
-2. Headers: `curl -I https://<staging-url>` shows the four CRITICAL headers from 4.6.
+2. Headers: `curl -I https://<staging-url>` (`rtk proxy curl -I …` with RTK installed) shows the
+   four CRITICAL headers from 4.6.
 3. Source maps: the network tab serves no `.map` file.
 4. Cookies, if any: `HttpOnly`, `Secure` and `SameSite` on each.
 5. Bundle: no server-only module in a client chunk.

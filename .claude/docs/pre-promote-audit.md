@@ -10,7 +10,7 @@ the diff lands on.
 
 The audit reports and stops. Every command below writes to `$TMPDIR` or nowhere, so it is safe in
 a checkout other sessions share. Read counts unfiltered: an output wrapper that summarises output
-turns a count into an estimate.
+turns a count into an estimate, so where RTK is installed run each command as `rtk proxy <command>`.
 
 ## Step 1 — Pin the range
 

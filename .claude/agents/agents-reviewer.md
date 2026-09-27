@@ -13,8 +13,8 @@ SEO have their own reviewers (`agents-i18n-guard`, `agents-security-guard`,
 
 ## Scope
 
-Review the uncommitted diff: `git diff` plus `git diff --staged`, read unfiltered. If CLAUDE.md
-§ Command Wrapper names a wrapper that condenses output, bypass it for the diff. Limit yourself to
+Review the uncommitted diff: `git diff` plus `git diff --staged`, read whole. With RTK installed,
+run them as `rtk proxy git diff` and `rtk proxy git diff --staged`: its rewrite condenses a diff. Limit yourself to
 the `.ts` and `.tsx` files the diff actually touches, and judge only the changed lines and the
 symbols they belong to.
 

@@ -77,7 +77,7 @@ session: one line per agreement, under 5 KB. Operational facts live in `.claude/
 ## Tool traps
 
 - An output wrapper or filter can truncate without a marker: read diffs, check results and scan
-  output unfiltered, and send large output to a file.
+  output unfiltered (`rtk proxy <command>` where RTK is installed), and send large output to a file.
 - File length is what the linter's max-lines rule counts, never `wc -l`. A disable comment the
   linter honours is proven load-bearing by deleting it and re-running.
 - `git rev-list --left-right A...B` counts A first. Run Python tools with `env -u PYTHONPATH` when
