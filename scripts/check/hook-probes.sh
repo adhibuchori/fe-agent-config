@@ -248,6 +248,23 @@ feed block plain PATH="$TMP/dying:$PATH"
 # hook timeout, with or without a `timeout` command on PATH.
 feed block plain PATH="$TMP/slow:$PATH" HOOK_PROBE_CAP=2
 feed block plain PATH="$TMP/slow:$TMP/nopy" HOOK_PROBE_CAP=2
+# Linux starts no program given one argument or environment string over 128 KiB (MAX_ARG_STRLEN),
+# and macOS has no such cap: a python3 held to Linux's rule proves no hook hands it one, since a
+# guard that cannot start python3 refuses every command.
+mkdir -p "$TMP/argcap"
+cat >"$TMP/argcap/python3" <<EOF
+#!/usr/bin/env bash
+LC_ALL=C
+for a in "\$@"; do
+  [ "\${#a}" -le 131072 ] || { echo "python3: an argument of \${#a} bytes, over Linux's cap" >&2; exit 126; }
+done
+"$(command -v python3)" -c 'import os, sys; sys.exit(any(len(k) + len(v) + 1 > 131072 for k, v in os.environb.items()))' ||
+  { echo "python3: an environment string over Linux's cap" >&2; exit 126; }
+exec "$(command -v python3)" "\$@"
+EOF
+chmod +x "$TMP/argcap/python3"
+feed block push PATH="$TMP/argcap:$PATH"
+feed allow plain PATH="$TMP/argcap:$PATH"
 # No python3 at all: the plain-text rules stand in (jq reads the payload when present), and without
 # any JSON reader they judge the raw payload. Claude is told when jq can say so.
 for kit in nopy nojson; do
@@ -853,6 +870,7 @@ DR="$(tool_json mcp__db-prod__execute_sql '{"sql": "SELECT 1"}')"
 DW="$(tool_json mcp__db-prod__execute_sql '{"sql": "DELETE FROM t"}')"
 if has db-guard.sh; then
   timed allow db-guard.sh nojq "$DR" PATH="$TMP/nojq" CLAUDE_PROJECT_DIR="$F"
+  timed allow db-guard.sh argcap "$DR" PATH="$TMP/argcap:$PATH" CLAUDE_PROJECT_DIR="$F"
   timed block db-guard.sh nojq "$DW" PATH="$TMP/nojq" CLAUDE_PROJECT_DIR="$F"
   for kit in nopy nojson; do timed refuse db-guard.sh "$kit" "$DR" PATH="$TMP/$kit" CLAUDE_PROJECT_DIR="$F"; done
   for kit in dying slow; do timed refuse db-guard.sh "$kit" "$DR" PATH="$TMP/$kit:$TMP/nopy" CLAUDE_PROJECT_DIR="$F" HOOK_PROBE_CAP=1; done

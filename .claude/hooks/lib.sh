@@ -3832,7 +3832,14 @@ for line in out:
 print("END")
 PY
 
-# Capped at 8 s, and for a guard at what is left of its deadline once the fields are read.
+# Capped at 8 s, and for a guard at what is left of its deadline once the fields are read. The
+# program is well over 128 KiB, the most Linux passes in one argument or environment string
+# (MAX_ARG_STRLEN; macOS has no such limit), so python3 reads it from descriptor 3 and -c holds
+# only the loader; the command itself stays on stdin.
+HOOK_PY_FD3='import os, sys
+with os.fdopen(3, encoding="utf-8") as fh:
+    code = compile(fh.read(), "<hook>", "exec")
+exec(code)'
 analyze_command() {
   local session tool_use
   session="$(hook_field .session_id)"
@@ -3841,5 +3848,5 @@ analyze_command() {
     HOOK_CWD="${2:-$PWD}" HOOK_ROOT="${ROOT:-$PWD}" HOOK_MODE="${HOOK_MODE:-check}" HOOK_DEFAULTS="$HOOK_DEFAULTS" \
     HOOK_SESSION="$session" HOOK_TOOL_USE_ID="$tool_use" HOOK_STATE="$(hook_state_dir)" \
     HOOK_OPTIN="$(hook_optin_file)" HOOK_LIB_DIR="$HOOK_LIB_DIR" \
-    run_capped "$(hook_cap 8)" python3 -c "$HOOK_PY_PRELUDE"$'\n'"$HOOK_ANALYZER"
+    run_capped "$(hook_cap 8)" python3 -c "$HOOK_PY_FD3" 3<<<"$HOOK_PY_PRELUDE"$'\n'"$HOOK_ANALYZER"
 }
