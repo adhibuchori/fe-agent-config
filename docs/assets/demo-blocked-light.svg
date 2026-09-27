@@ -47,7 +47,7 @@
 <g class="tw tw2"><path d="M1128,207Q1129.9,212.1 1135,214Q1129.9,215.9 1128,221Q1126.1,215.9 1121,214Q1126.1,212.1 1128,207Z" fill="#7dd3fc" opacity="1"/></g>
 <g class="tw tw3"><path d="M1136,376Q1138.2,381.8 1144,384Q1138.2,386.2 1136,392Q1133.8,386.2 1128,384Q1133.8,381.8 1136,376Z" fill="#818cf8" opacity="1"/></g>
 <g class="tw tw4"><path d="M868,392Q869.7,396.3 874,398Q869.7,399.7 868,404Q866.3,399.7 862,398Q866.3,396.3 868,392Z" fill="#7dd3fc" opacity="1"/></g>
-<g transform="translate(853.6 163.5) scale(1.25)">
+<g transform="translate(856.1 152.7) scale(1.25)">
 <defs>
 <radialGradient id="mg" cx="50%" cy="60%" r="55%">
 <stop offset="0" stop-color="#a5b4fc"/>
@@ -101,6 +101,6 @@
 </g>
 </g>
 </g>
-<rect x="920" y="432" width="160" height="31" rx="15.5" fill="#ffffff" stroke="#e8e4da" stroke-width="1.5"/>
-<text class="s" x="1000" y="452.8" font-size="15" font-weight="600" fill="#1c1a15" text-anchor="middle">safety-check hook</text>
+<rect x="920" y="446" width="160" height="31" rx="15.5" fill="#ffffff" stroke="#e8e4da" stroke-width="1.5"/>
+<text class="s" x="1000" y="466.8" font-size="15" font-weight="600" fill="#1c1a15" text-anchor="middle">safety-check hook</text>
 </svg>
